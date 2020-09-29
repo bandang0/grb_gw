@@ -1,0 +1,16 @@
+*.out
+*.ps
+*.png
+*.o
+*.mod
+*.data
+*.exe
+*.pdf
+*pycache*
+obj/
+output/ 
+data/
+*.bk
+.DS_Store
+*/.DS_Store
+.ipynb_checkpoints/
