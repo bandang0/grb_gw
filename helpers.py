@@ -3,11 +3,6 @@
 import numpy as np
 from os import system
 
-TMP_CONF_FILE = "data/tmp.conf"
-TMP_DATA_FILE = "data/tmp.out"
-MAX_TRIES = 256
-EXPLO_EXTENT = 4
-
 log = np.log10
 Pi = 3.141592653589793238
 Deg         = (1.74532925e-2)    # rad
@@ -51,74 +46,6 @@ mJy         = (1.0e-26)           # erg/cm2/s/Hz
 microJy     = (1.0e-29)           # erg/cm2/s/Hz
 micron      = (1.0e-4)            # cm
 
-# Observations
-OBS_TIMES_d = np.array([16.42,    17.39,  18.33,  22.36,  24.26,  31.22,
-    46.26,  54.27,  57.22,  93.13,  115.05, 162.89, 196.79, 216.91,
-    220., 256.76, 267., 294.])
-OBS_FLUXES_muJy = np.array([18.7, 15.1,   14.5,   22.5,   25.6,   34.0,
-    44.0,   48.,    61.0,   70.0,   89.05,  98.0,   78.9,   68.,
-    64.7, 55.,    40.3, 31.2])
-OBS_ERRORS_muJy = np.array([6.3,  3.9,    3.7,    3.4,    2.9,    3.6,
-    4.,     6.,     9.,     5.7,    20.,    22.5,   9.,     21.,
-    2.7,  12.,    2.7,  3.6])
-
-OBS_FLUXES_mJy = 1.e-3 * OBS_FLUXES_muJy
-OBS_ERRORS_mJy = 1.e-3 * OBS_ERRORS_muJy
-
-#increase
-OBS_TIMES_1_d = OBS_TIMES_d[:12]
-OBS_FLUXES_1_muJy = OBS_FLUXES_muJy[:12]
-OBS_ERRORS_1_muJy = OBS_ERRORS_muJy[:12]
-
-#decrease
-OBS_TIMES_2_d = OBS_TIMES_d[10:]
-OBS_FLUXES_2_muJy = OBS_FLUXES_muJy[10:]
-OBS_ERRORS_2_muJy = OBS_ERRORS_muJy[10:]
-
-default_L = 0.
-default_gamma_0 = 100.
-default_E_0 = 5.26e50
-default_epsilon_e = 0.1
-default_epsilon_B = 1.11e-3
-default_n = 8.87e-4
-default_zeta = 1.
-default_p = 2.2
-default_gb_min = 1.51
-default_gb_max = 3.10
-default_nu_obs = 3.e9
-default_N_POINTS = 1024
-default_D = 1.29e26
-default_alpha = 5.0
-default_theta_obs = 0.
-default_theta_jet = 2.0
-default_first_day = 10
-default_last_day = 1000
-
-BEST_LOGN, BEST_LOGE, BEST_LOGEB, BEST_LOGGB_MIN, BEST_LOGGB_MAX \
-        = -3.09, 50.75, -2.93, 0.18, 0.50
-
-# Dictonaries for input parameters
-jet_dic = lambda x: {'E_0': x[0],
-                        'n': x[1],
-                        'epsilon_B': x[2],
-                        'theta_obs': x[3],
-                        'theta_jet': 2.,
-                        'L': 0.0}
-
-cocoon_dic = lambda x: {'n': x[0],
-                        'E_0': x[1],
-                        'epsilon_B': x[2],
-                        'gb_min': x[3],
-                        'gb_max': x[4],
-                        'L': 1.0}
-
-shell_dic = lambda x: {'n': x[0],
-                        'E_0': x[1],
-                        'gamma_0': x[2],
-                        'epsilon_B': x[3],
-                        'L': 0.0}
-
-errf = lambda x: np.exp(- x * np.sqrt(2)) - 1 if x < 0. else 0
 
 def binsum(a, b):
     return np.cumsum(a * np.append(np.diff(b), 0.))
@@ -316,3 +243,19 @@ def polyfit(x, y, sigma):
 def add_plot(plt, file_name, **kwargs):
     a, b = data_list("data/{}.out".format(file_name))
     plt.plot(a / day, b * 1.e29, **kwargs)
+
+def deltaphi(chic, r, chi):
+    if chic < r: #on axis case
+        if chi < r - chic:
+            return 2 * Pi
+        if chi < r + chic:
+            return 2 * np.arccos((cos(r) - cos(chic) * cos(chi))/(sin(chic) * sin(chi)))
+        else:
+            return 0.
+    else: # off-axis case
+        if chi < chic - r:
+            return 0.
+        if chi < chi + r:
+            return 2 * np.arccos((cos(r) - cos(chic) * cos(chi))/(sin(chic) * sin(chi)))
+        else:
+            return 0.
