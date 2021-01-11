@@ -1,7 +1,6 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
-#include <libconfig.h>
 #include <stdlib.h>
 #include <math.h>
 

@@ -158,6 +158,15 @@ double kngmag(double tv, double d){
 
 }
 
+double kngmagwall(double tv, double d){
+  if (tv < 60 * Deg){
+    return -17.6 + 7 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
+  }
+  else{
+    return -17.6 + 7 + 5. * log10(d / (10 * pc));
+  }
+}
+
 double knrmagwall(double tv, double d){
   if (tv < 60 * Deg){
     return -16.9 + 4 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
@@ -167,13 +176,27 @@ double knrmagwall(double tv, double d){
   }
 }
 
-double kngmagwall(double tv, double d){
+double knimagwall(double tv, double d){
   if (tv < 60 * Deg){
-    return -17.6 + 7 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
+    return -17.0 + 3.5 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
   }
   else{
-    return -17.6 + 7 + 5. * log10(d / (10 * pc));
+    return -17.0 + 3.5 + 5. * log10(d / (10 * pc));
   }
+}
+
+double knzmagwall(double tv, double d){
+  if (tv < 60 * Deg){
+    return -16.8 + 2.5 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
+  }
+  else{
+    return -16.8 + 2.5 + 5. * log10(d / (10 * pc));
+  }
+}
+
+double peak_flux_kn(double phi, double d, double tv){
+  return 13 * phi * pow(d / (100 * Mpc), -2.)
+   * pow(fmax(0.1/0.1, tv / (25 * Deg)), -4.4) * microJy;
 }
 
 /* apparent proper motion */
