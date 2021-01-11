@@ -2,8 +2,12 @@
 
 import numpy as np
 from os import system
+from numpy import cos, sin, tan, arccos, sqrt
+from numpy import log10 as log
+from matplotlib import colors
+from matplotlib.cm import rainbow
 
-log = np.log10
+
 Pi = 3.141592653589793238
 Deg         = (1.74532925e-2)    # rad
 mas         = (4.8481368e-9)     # rad
@@ -45,7 +49,10 @@ Jy          = (1.0e-23)           # erg/cm2/s/Hz
 mJy         = (1.0e-26)           # erg/cm2/s/Hz
 microJy     = (1.0e-29)           # erg/cm2/s/Hz
 micron      = (1.0e-4)            # cm
-
+XRT_c = (30. - 0.3) * keV / hPlanck
+BAT_c = (150. - 15.) * keV / hPlanck
+cmap = colors.LinearSegmentedColormap.from_list('custom',rainbow(np.linspace(0, 1, 10)))
+ls_l = ['-', ':', '--', '-.']
 
 def binsum(a, b):
     return np.cumsum(a * np.append(np.diff(b), 0.))
@@ -238,7 +245,7 @@ def polyfit(x, y, sigma):
     delta_m = 1 / (T * (bar(x * x) - bar(x) ** 2))
     delta_c = bar(x * x) * delta_m
 
-    return m, c, np.sqrt(delta_m), np.sqrt(delta_c)
+    return m, c, sqrt(delta_m), sqrt(delta_c)
 
 def add_plot(plt, file_name, **kwargs):
     a, b = data_list("data/{}.out".format(file_name))
@@ -246,16 +253,48 @@ def add_plot(plt, file_name, **kwargs):
 
 def deltaphi(chic, r, chi):
     if chic < r: #on axis case
-        if chi < r - chic:
+        if chi <= r - chic:
             return 2 * Pi
-        if chi < r + chic:
-            return 2 * np.arccos((cos(r) - cos(chic) * cos(chi))/(sin(chic) * sin(chi)))
-        else:
+        if chi >= chic + r:
             return 0.
+        else:
+            return 2 * arccos((cos(r) - cos(chic) * cos(chi))/(sin(chic) * sin(chi)))
     else: # off-axis case
-        if chi < chic - r:
+        if (chi <= chic - r
+            or chi >= chic + r
+            or np.abs((cos(r) - cos(chic) * cos(chi))/(sin(chic) * sin(chi))) >= 1.):
             return 0.
-        if chi < chi + r:
-            return 2 * np.arccos((cos(r) - cos(chic) * cos(chi))/(sin(chic) * sin(chi)))
         else:
-            return 0.
+            return 2 * arccos((cos(r) - cos(chic) * cos(chi))/(sin(chic) * sin(chi)))
+def bpl(nu, nup, a, b):
+    if nu < nup:
+        return (nu/nup) ** a / (nup * (1/(a+1) - 1/(b+1)))
+    else:
+        return (nu/nup) ** b / (nup * (1/(a+1) - 1/(b+1)))
+
+def simple_hle_patch(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b):
+    beta = sqrt(1 - 1 / g ** 2)
+    return ((Eiso / 4 * Pi) * (cLight / re) * deltaphi(chic, r, np.arccos((te - t) * cLight / re))
+            * bpl(nuobs * g * (1 - beta * cLight * (te - t) / re), nup, a, b)
+            / (g * (1 - beta * cLight * (te - t) / re)) ** 2)
+
+def peak_patch_luminosity(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
+    beta = sqrt(1 - 1 / g ** 2)
+    if chic - r <0.:
+        return ((Eiso * cLight) / (2 * re)
+                 * bpl(nuobs * g * (1 - beta), nup, a, b)
+                 / (g * (1 - beta))**2)
+    else:
+        theta_p = 1 * (chic - 0.5 * r)
+        return ((Eiso * cLight) / (4 * Pi * re) * deltaphi(chic, r, theta_p)
+                 * bpl(nuobs * g * (1 - beta * cos(theta_p)), nup, a, b)
+                 / (g * (1 - beta * cos(theta_p)))**2)
+
+def toy_plateau(t):
+    maxi = 1.e46 / ((30 - 0.3) * keV / hPlanck)
+    if t < 1.e3:
+        return maxi * (t/1.e3)**(-3)
+    if t > 1.e5:
+        return maxi * (t/1.e5)**(-1)
+    else:
+        return maxi
