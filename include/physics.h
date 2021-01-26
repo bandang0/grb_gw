@@ -195,8 +195,8 @@ double knzmagwall(double tv, double d){
 }
 
 double peak_flux_kn(double phi, double d, double tv){
-  return 13 * phi * pow(d / (100 * Mpc), -2.)
-   * pow(fmax(0.1/0.1, tv / (25 * Deg)), -4.4) * microJy;
+  return 8.6 * phi * pow(d / (100 * Mpc), -2.)
+   * pow(fmax(1, tv / 0.1), -4.4) * mJy;
 }
 
 /* apparent proper motion */

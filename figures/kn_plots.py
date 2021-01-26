@@ -2,25 +2,38 @@
 
 from sys import exit
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+from matplotlib import gridspec
 import pandas as pd
 from numpy import sin, cos
 import numpy as np
 from helpers import *
 from sys import argv
 
+# Setup
 DATA_FILE_O3 = "data/kn_O3.data"
 DATA_FILE_O4 = "data/kn_O4.data"
 DATA_FILE_O5 = "data/kn_O5.data"
+DATA_FILE_MAX = "data/kn_max.data"
+DATA_FILE_190425 = "data/kn_190425.data"
 PLOT_DIR = f"plots/kn_plots"
 plt.style.use('presentation')
-BINS = 70
+BINS = 80
+thin = 1.
 
+colors = {"g": "green",
+            "r": "red",
+            "i": "black",
+            "z": "blue"}
 # Constants
 g0 = 100.
 GWH_O3 = 157.
 GWH_O4 = 229.
 GWH_O5 = 472.
+GWH_190425 = 181.
+GWH_MAX = 650.
 vlas = 15.
+mag_170817={'r': 17.30, 'g': 17.18, 'i':17}
 
 print(f"Collecting data from data file")
 df_O3 = pd.read_csv(DATA_FILE_O3, sep=" ",
@@ -32,398 +45,293 @@ df_O4 = pd.read_csv(DATA_FILE_O4, sep=" ",
 df_O5 = pd.read_csv(DATA_FILE_O5, sep=" ",
         names=['d', 'tv', 'g', 'r', 'i', 'z', 'r1', 'r10'])
 
+df_max = pd.read_csv(DATA_FILE_MAX, sep=" ",
+        names=['d', 'tv', 'g', 'r', 'i', 'z', 'r1', 'r10'])
+
+df_190425 = pd.read_csv(DATA_FILE_190425, sep=" ",
+        names=['d', 'tv', 'g', 'r', 'i', 'z', 'r1', 'r10'])
+
+print(f"Total elements: {len(df_O3['d'])}.")
+gw_O5 = df_O5.loc[1. + 6. * cos(df_O5['tv']) ** 2 + cos(df_O5['tv']) ** 4\
+            > 8 * df_O5['d'] ** 2 / GWH_O5 ** 2]
+gw_O4 = df_O4.loc[1. + 6. * cos(df_O4['tv']) ** 2 + cos(df_O4['tv']) ** 4\
+            > 8 * df_O4['d'] ** 2 / GWH_O4 ** 2]
+gw_O3 = df_O3.loc[1. + 6. * cos(df_O3['tv']) ** 2 + cos(df_O3['tv']) ** 4\
+            > 8 * df_O3['d'] ** 2 / GWH_O3 ** 2]
+gw_190425 = df_190425.loc[1. + 6. * cos(df_190425['tv']) ** 2 + cos(df_190425['tv']) ** 4\
+            > 8 * df_190425['d'] ** 2 / GWH_190425 ** 2]
+r_max_O3 = gw_O3['r'].max()
+r_max_O4 = gw_O4['r'].max()
+r_max_O5 = gw_O5['r'].max()
+
+x_0 = 1 / sqrt(8)
+x_m = gw_O5['d'].median() / GWH_O5
+t_m = gw_O5['tv'].median() / Deg
+
+print("figure 5")
+histgw, edgesgw = np.histogram(gw_O5['tv'] / Deg, density=True, bins=BINS)
+mag_lim_d = {'g': 21, 'r': 21, 'i': 21.5}
+cmap_d = {'g': 'Greens', 'r': 'Reds', 'i': 'Greys'}
+c_d = {'g': 'green', 'r': 'red', 'i': 'grey'}
+tex_d = {'g': r'$g$', 'r': r'$r$', 'i': r'$i$'}
+tmp = gw_190425.loc[(gw_190425['d'] < 159 + 69) & (gw_190425['d'] > 159 - 71)]
+all_obs = tmp.loc[(tmp['r'] > 21) & (tmp['g'] > 21) & (tmp['i'] > 21.5)]
+print(f"Under 190425, theta = {np.percentile(all_obs['tv'], 5) / Deg:.2f}, {all_obs['tv'].median() / Deg:.2f}, {np.percentile(all_obs['tv'], 95) / Deg:.2f}.")
+for band in ['g', 'r', 'i']:
+    plt.figure()
+    obs = tmp.loc[tmp[band] > mag_lim_d[band]]
+    gs = gridspec.GridSpec(2, 1, height_ratios=[2, 1])
+
+    # the fisrt subplot
+    ax0 = plt.subplot(gs[0])
+    ax0.hist2d(tmp['tv'] / Deg, tmp[band], range = [[0, 90], [16, 24]], bins=BINS, cmin=1,
+                cmap = cmap_d[band])
+    ax0.errorbar([15], mag_170817[band], xerr=[[2.46], [1.64]], color=c_d[band])
+    ax0.text(20, mag_170817[band], "AT2017gfo")
+    ax0.set_xlim(0, 90)
+    ax0.set_ylim(24, 16)
+    ax0.hlines(mag_lim_d[band], xmin=0, xmax=90, linestyle="--", linewidth=thin, color="grey")
+    ax0.set_ylabel(tex_d[band])
+
+    #the second subplot
+    ax1 = plt.subplot(gs[1], sharex = ax0)
+    ax1.plot(edgesgw[:-1], histgw / max(histgw), color="grey", linewidth=thin)
+    hist, edges = np.histogram(obs['tv'] / Deg, density=True, range=[0, 90], bins=BINS)
+    ax1.plot(edges[:-1], hist / max(hist), color='black')
+    a = np.percentile(obs['tv'], 5) / Deg
+    m = np.percentile(obs['tv'], 50) / Deg
+    b = np.percentile(obs['tv'], 95) / Deg
+    ax1.vlines(a, ymin = 0, ymax=lsub(a, edges, hist)/max(hist), color="black", linestyle=":", linewidth=thin)
+    ax1.vlines(m, ymin = 0, ymax=lsub(m, edges, hist)/max(hist), color="black", linestyle="--", linewidth=thin)
+    ax1.vlines(b, ymin = 0, ymax=lsub(b, edges, hist)/ max(hist), color="black", linestyle=":", linewidth=thin)
+    ax1.set_xlabel(r"$\theta_v$ [deg]")
+    plt.setp(ax0.get_xticklabels(), visible=False)
+    ax1.set_yticklabels([])
+    ax1.set_ylim(0)
+
+    # remove vertical gap between subplots
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(f"{PLOT_DIR}/fig5_{band}.pdf", bbox_inches='tight')
+
+
+print("figure 4")
+hmax = 1
+for mag_lim in [22, 19, 20, 21]:
+    plt.figure()
+    blue = df_max.loc[(1. + 6. * cos(df_max['tv']) ** 2 + cos(df_max['tv']) ** 4\
+                > 8 * df_max['d'] ** 2 / GWH_O4 ** 2) & (df_max['r'] > mag_lim)]
+    green = df_max.loc[(1. + 6. * cos(df_max['tv']) ** 2 + cos(df_max['tv']) ** 4\
+                > 8 * df_max['d'] ** 2 / GWH_O4 ** 2) & (df_max['r'] < mag_lim)]
+    red = df_max.loc[(1. + 6. * cos(df_max['tv']) ** 2 + cos(df_max['tv']) ** 4\
+                < 8 * df_max['d'] ** 2 / GWH_O4 ** 2) & (df_max['r'] < mag_lim)]
+
+    tot1 = len(blue['d'])
+    tot2 = len(green['d'])
+    tot3 = len(red['d'])
+
+    r1 = 10 * tot1 / (tot1 + tot2)
+    r2 = 10 * tot2 / (tot1 + tot2)
+    r3 = 10 * tot3 / (tot1 + tot2)
+
+    h1 = np.histogram2d(blue['d'], blue['tv'] / Deg, range=[[0, 650], [0, 90]],bins=BINS)
+    h2 = np.histogram2d(green['d'], green['tv'] / Deg, range=[[0, 650], [0, 90]],bins=BINS)
+    h3 = np.histogram2d(red['d'], red['tv'] / Deg, range=[[0, 650], [0, 90]],bins=BINS)
+    h1max = np.nanmax(h1[0])
+    h2max = np.nanmax(h2[0])
+    h3max = np.nanmax(h3[0])
+    hmax = max(hmax, h1max, h2max, h3max)
+    print(f"Mag_lim = {mag_lim}: {h1max}, {h2max}, {h3max}, {hmax}")
+    h1 = plt.hist2d(blue['d'], blue['tv'] / Deg, range=[[0, 650], [0, 90]], cmin = 1,
+        bins=BINS, cmap="Blues", norm=Normalize(0, hmax))
+    h2 = plt.hist2d(green['d'], green['tv'] / Deg, range=[[0, 650], [0, 90]], cmin = 1,
+        bins=BINS, cmap="Greens", norm=Normalize(0, hmax))
+    h3 = plt.hist2d(red['d'], red['tv'] / Deg, range=[[0, 650], [0, 90]], cmin = 1,
+        bins=BINS, cmap="Reds", norm=Normalize(0, hmax))
+
+    plt.text(350, 60, f"GW w/o KN: {r1:.2f} /yr")
+    plt.text(350, 55, f"GW w/ KN: {r2:.2f} /yr")
+    plt.text(350, 50, f"KN w/o GW: {r3:.2f} /yr")
+
+
+    d_l = np.linspace(GWH_O4/sqrt(8), GWH_O4, 200)
+    plt.plot(d_l, [np.arccos(sqrt(-3 + sqrt(8) * sqrt(1 + d**2 / GWH_O4**2))) / Deg for d in d_l],
+            color = "black")
+    d_m = 10 * pc * 10 ** ((mag_lim + 1 + 16.9 - 4) / 5) / Mpc
+    d_l = np.linspace(d_m, GWH_MAX, 200)
+    plt.plot(d_l, [np.arccos(0.125 * (8-mag_lim - 1 - 16.9 + 5 * log(d * Mpc / (10 * pc)))) / Deg for d in d_l],
+            color = "black")
+    plt.vlines(d_m, ymin = 60, ymax = 90, color="black")
+
+    plt.axhspan(0, 0.1 / Deg, color="grey", alpha=0.5)
+    plt.text(30, 2, "on-axis")
+
+
+    plt.xlabel(r"$D$ [Mpc]")
+    plt.ylabel(r"$\theta_v$ [deg]")
+    plt.xlim(0, 650)
+    plt.ylim(0, 90)
+    plt.savefig(f"{PLOT_DIR}/fig4_{mag_lim}.pdf", bbox_inches='tight')
+
+print("figure 1a")
 plt.figure()
-plt.hist(df_O3['r'], bins=BINS, label=r"O3")
-plt.hist(df_O4['r'], bins=BINS, label=r"O4")
-plt.hist(df_O5['r'], bins=BINS, label=r"O5")
+hist, edges = np.histogram(gw_O5['d'] / GWH_O5, density=True, bins=BINS)
+plt.plot(edges[:-1], hist)
+plt.vlines(x = x_0, ymin = 0, ymax=lsub(x_0, edges, hist), linestyle="--", linewidth=thin, color="grey")
+plt.vlines(x = x_m, ymin = 0, ymax=lsub(x_m, edges, hist), linestyle="--", linewidth=thin, color="grey")
+plt.text(x_0, 0.4, r"$D / D_H = 1/\sqrt{8}$", rotation=90)
+plt.text(x_m, 0.4, r"median", rotation=90)
+plt.xlim(0, 1)
+plt.ylim(0, 2)
+plt.tick_params(labelleft=False)
+plt.xlabel(r"$D/D_H$")
+plt.savefig(f"{PLOT_DIR}/fig1a.pdf", bbox_inches='tight')
+
+print("figure 1b")
+plt.figure()
+hist = np.cumsum(hist) / BINS
+plt.plot(edges[:-1], hist)
+plt.vlines(x = x_0, ymin = 0, ymax=lsub(x_0, edges, hist), linestyle="--", linewidth=thin, color="grey")
+plt.vlines(x = x_m, ymin = 0, ymax=lsub(x_m, edges, hist), linestyle="--", linewidth=thin, color="grey")
+plt.text(x_0, 0.3, r"$D / D_H = 1/\sqrt{8}$", rotation=90)
+plt.text(x_m, 0.3, r"median", rotation=90)
+plt.xlim(0, 1)
+plt.ylim(0, 1)
+plt.xlabel(r"$D/D_H$")
+plt.savefig(f"{PLOT_DIR}/fig1b.pdf", bbox_inches='tight')
+
+print("figure 1c")
+plt.figure()
+hist, edges = np.histogram(gw_O5['tv'] / Deg, density=True, bins=BINS)
+plt.plot(edges[:-1], hist)
+plt.vlines(x = t_m, ymin = 0, ymax=lsub(t_m, edges, hist), linestyle="--", linewidth=thin, color="grey")
+plt.text(t_m, 0.0025, r"median", rotation=90)
+plt.xlim(0, 90)
+plt.ylim(0, 0.025)
+plt.tick_params(labelleft=False)
+plt.xlabel(r"$\theta_v$ [deg]")
+plt.savefig(f"{PLOT_DIR}/fig1c.pdf", bbox_inches='tight')
+
+print("figure 1d")
+plt.figure()
+hist = np.cumsum(hist) * 90 / BINS
+plt.plot(edges[:-1], hist)
+plt.vlines(x = t_m, ymin=0, ymax=lsub(t_m, edges, hist), linestyle="--", linewidth=thin, color="grey")
+plt.text(t_m, 1/10, r"median", rotation=90)
+plt.xlim(0, 90)
+plt.ylim(0, 1)
+plt.xlabel(r"$\theta_v$ [deg]")
+plt.savefig(f"{PLOT_DIR}/fig1d.pdf", bbox_inches='tight')
+
+print("figure 2a")
+plt.figure()
+for f in ['g', 'r', 'i', 'z']:
+    hist, edges = np.histogram(gw_O4[f], density=True, bins=BINS, range=[16, 24])
+    plt.plot(edges[:-1], hist, label=f, color=colors[f])
+plt.xlim(24, 16)
+plt.ylim(0)
+plt.xlabel("AB magnitude")
+plt.legend()
+plt.tick_params(labelleft=False)
+plt.savefig(f"{PLOT_DIR}/fig2a.pdf", bbox_inches='tight')
+
+print("figure 2b")
+plt.figure()
+hist3, edges3 = np.histogram(gw_O3['r'], bins=BINS)
+hist4, edges4 = np.histogram(gw_O4['r'], bins=BINS)
+hist5, edges5 = np.histogram(gw_O5['r'], bins=BINS)
+hist3 = np.cumsum(hist3)
+alpha = hist3[-1] / 5
+hist4 = np.cumsum(hist4)
+hist5 = np.cumsum(hist5)
+rate3 = hist3 / alpha
+rate4 = hist4 * (GWH_O4 / GWH_O3)**3 / alpha
+rate5 = hist5 * (GWH_O5 / GWH_O3)**3 / alpha
+plt.plot(np.append(edges5[:-1], 26), np.append(rate5, rate5[-1]), "-", label="O5", color="black")
+plt.plot(np.append(edges4[:-1], 26), np.append(rate4, rate4[-1]), "--", label="O4", color="black")
+plt.plot(np.append(edges3[:-1], 26), np.append(rate3, rate3[-1]), "-.", label="O3", color="black")
+
+plt.vlines(r_max_O3, ymin = 0.1, ymax=rate3[-1], linestyle=":", color="grey", linewidth=thin)
+plt.vlines(r_max_O4, ymin=0.1, ymax=rate4[-1], linestyle=":", color="grey", linewidth=thin)
+plt.vlines(r_max_O5, ymin=0.1, ymax=rate5[-1], linestyle=":", color="grey", linewidth=thin)
+plt.text(r_max_O3, 0.2, r"$r_{{\rm max}}^{{\rm O3}}$", rotation=90)
+plt.text(r_max_O4, 0.2, r"$r_{{\rm max}}^{{\rm O4}}$", rotation=90)
+plt.text(r_max_O5, 0.2, r"$r_{{\rm max}}^{{\rm O5}}$", rotation=90)
 plt.xlabel(r"$r$")
+plt.ylabel(r"$\tau_{\rm KN}~[{\rm yr}^{-1}]$")
 plt.xlim(26, 16)
+plt.ylim(0.1, 300)
+plt.yscale("log")
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/fig_test.pdf", bbox_inches = 'tight')
+plt.savefig(f"{PLOT_DIR}/fig2b.pdf", bbox_inches='tight')
 
-exit(0)
-
-ta1 = [2.5, 5, 7.5, 11, 15]
-ta2 = [3.5, 7, 9.5, 14, 20]
-ta3 = [5.5, 10, 13.5, 17, 26]
+print("figure 3")
 plt.figure()
-plt.plot(wple, ta1, "-", label=r"$\theta_j = 3~{\rm deg}$", color="blue")
-plt.plot(wple, ta2, "-", label=r"$\theta_j = 6~{\rm deg}$", color="black")
-plt.plot(wple, ta3, "-", label=r"$\theta_j = 12~{\rm deg}$", color="red")
-plt.axhline(y=20, linestyle="-", color="blue", linewidth=lw)
-plt.axhline(y=30, linestyle="-", color="black", linewidth=lw)
-plt.axhline(y=40, linestyle="-", color="red", linewidth=lw)
-plt.xlabel(r"${\rm Log}(E_m/{\rm erg})$")
-plt.ylabel(r"$\langle \theta_v \rangle$ (deg)")
+hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
+plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="black")
+plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
+for mag_lim in [21, 20, 19, 18]:
+    c = cmap((21 - mag_lim)/(21 - 18))
+    tmp = gw_O4.loc[gw_O4['r'] < mag_lim]
+    hist, edges = np.histogram(tmp['tv'] / Deg, bins=BINS)
+    a = np.percentile(tmp['tv'], 5) / Deg
+    m = np.percentile(tmp['tv'], 50) / Deg
+    b = np.percentile(tmp['tv'], 95) / Deg
+    plt.plot(edges[:-1], hist, label=r"$r <$" + f" {mag_lim}", color=c)
+    plt.vlines(a, ymin = 0, ymax=lsub(a, edges, hist), color=c, linestyle=":", linewidth=thin)
+    plt.vlines(m, ymin = 0, ymax=lsub(m, edges, hist), color=c, linestyle="--", linewidth=thin)
+    plt.vlines(b, ymin = 0, ymax=lsub(b, edges, hist), color=c, linestyle=":", linewidth=thin)
+
+plt.axvspan(0, 0.1 / Deg, color="grey", alpha=0.5)
+
+plt.xlabel(r"$\theta_v$ [deg]")
+plt.tick_params(labelleft=False)
+plt.xlim(0, 90)
+plt.ylim(0)
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/fig9b.pdf", bbox_inches = 'tight')
-
-plt.figure()
-na1 = [2.5, 5, 7.5, 11, 15]
-na2 = [3.5, 7, 9.5, 14, 20]
-na3 = [5.5, 10, 13.5, 17, 26]
-nao1 = [2, 5.8, 7.2, 11.6, 17]
-nao2 = [3, 7.8, 9.2, 14.6, 22]
-nao3 = [5, 10.8, 13.2, 17.6, 28]
-plt.plot(wple, na1, "-", label=r"$\theta_j = 3~{\rm deg}$", color="blue")
-plt.plot(wple, na2, "-", label=r"$\theta_j = 6~{\rm deg}$", color="black")
-plt.plot(wple, na3, "-", label=r"$\theta_j = 12~{\rm deg}$", color="red")
-plt.axhline(y=20, linestyle="-", color="blue", linewidth=lw)
-plt.axhline(y=30, linestyle="-", color="black", linewidth=lw)
-plt.axhline(y=40, linestyle="-", color="red", linewidth=lw)
-plt.plot(wple, nao1, ":",color="blue")
-plt.plot(wple, nao2, ":",color="black")
-plt.plot(wple, nao3, ":", color="red")
-plt.axhline(y=24, linestyle=":", color="blue", linewidth=lw)
-plt.axhline(y=34, linestyle=":", color="black", linewidth=lw)
-plt.axhline(y=44, linestyle=":", color="red", linewidth=lw)
-plt.xlabel(r"${\rm Log}(E_m/{\rm erg})$")
-plt.ylabel(r"${\rm f}(t_p \leq 100~{\rm days})$")
-plt.legend()
-plt.savefig(f"{PLOT_DIR}/fig9c.pdf", bbox_inches = 'tight')
-
-# Read event data and create pandas data frame.
-
-df = df.loc[df['eb'] < 0.8]
-# Add other columns to frame
-df['lpt'] = log(df['pt'])
-df['ln'] = log(df['n'])
-df['lpf'] = log(df['pf'])
-df['le0'] = log(df['e0'])
-df['ld'] = log(df['d'])
-
-# Collect event data according to detections in GW, AG, etc.
-print("Creating derived dataframes.")
-gw_O2 = df.loc[1. + 6. * cos(df['tv']) ** 2 + cos(df['tv']) ** 4\
-            > 8 * df['d'] ** 2 / AH_O2 ** 2]
-gw_O3 = df.loc[1. + 6. * cos(df['tv']) ** 2 + cos(df['tv']) ** 4\
-            > 8 * df['d'] ** 2 / AH_O3 ** 2]
-gw_design = df.loc[1. + 6. * cos(df['tv']) ** 2 + cos(df['tv']) ** 4\
-            > 8 * df['d'] ** 2 / AH_DESIGN ** 2]
-gw_max = df.loc[1. + 6. * cos(df['tv']) ** 2 + cos(df['tv']) ** 4\
-            > 8 * df['d'] ** 2 / AH_MAX ** 2]
-
-gw_vla_O2 = gw_O2.loc[gw_O2['pf'] > vlas]
-gw_vla_O3 = gw_O3.loc[gw_O3['pf'] > vlas]
-gw_vla_design = gw_design.loc[gw_design['pf'] > vlas]
-gw_ska_design = gw_design.loc[gw_design['pf'] > skas]
-gw_ska2_design = gw_design.loc[gw_design['pf'] > ska2s]
-gw_ska_max = gw_max.loc[gw_max['pf'] > skas]
-
-print('tv')
-print(np.mean(gw_vla_O2['tv']) * 180 / Pi)
-print(np.mean(gw_vla_O3['tv']) * 180 / Pi)
-print(np.mean(gw_vla_design['tv']) * 180 / Pi)
-print(np.mean(gw_ska_design['tv']) * 180 / Pi)
-print(np.mean(gw_ska2_design['tv']) * 180 / Pi)
-
-print('frac')
-print(float(len(gw_vla_O2))/len(gw_O2))
-print(float(len(gw_vla_O3))/len(gw_O3))
-print(float(len(gw_vla_design))/len(gw_design))
-print(float(len(gw_ska_design))/len(gw_design))
-print(float(len(gw_ska2_design))/len(gw_design))
-
-print(f"fig5")
-P = len(gw_vla_O3['ln'])
-Q = len(gw_O3['ln'])
-R = len(df['ln'])
-plt.figure()
-plt.hist([df['ln']],
-        #label=['GW-only'],
-        histtype='step', bins=BINS, weights=np.ones(R) / float(Q))
-plt.hist([gw_vla_O3['ln']],
-        #label=['O3+VLA'],
-        histtype='step', bins=BINS,
-        weights= float(R) * np.ones(P) / float(Q * Q))
-plt.xlabel(r"${\rm Log}(n/{\rm cm}^{-3})$")
-plt.ylabel(r"$1/N_{\rm GW}~{\rm d}N/{\rm d}{\rm Log}~n$")
-plt.xlim([-6,0])
-plt.savefig(f"{PLOT_DIR}/fig5.pdf", bbox_inches='tight')
-plt.close()
-
-print(f"fig6")
-plt.figure()
-xbins=10 ** np.linspace(50, 53, BINS)
-counts, bin_edges = np.histogram(gw_O3['e0'], bins=xbins)
-plt.plot(xbins[:-1], counts / (Q * bin_edges[:-1]), label="GW-only",
-drawstyle="steps", linewidth=0.5)
-counts2, bin_edges2 = np.histogram(gw_vla_O3['e0'], bins=xbins)
-plt.plot(xbins[:-1], counts2 / (Q * bin_edges2[:-1]), label="O3+VLA",
-drawstyle="steps", linewidth=0.5)
-plt.yscale('log')
-plt.xscale('log')
-plt.xlabel(r"$E_{\rm c, iso}/{\rm erg}$")
-plt.ylabel(r"$1/N_{\rm GW}~{\rm d}N/{\rm d}E_{\rm c,iso}$")
-plt.legend(loc="lower left")
-#plt.ylim([1.e-2, 2.1])
-
-plt.savefig(f"{PLOT_DIR}/fig6.pdf", bbox_inches='tight')
-plt.close()
-
-# Fractions as function of horizon
-print("Functions of horizon.")
-gwh_l = np.linspace(GWH_MIN, GWH_MAX, 35)
-sens_l = np.linspace(LS_MIN, LS_MAX, 25)
-X, Y = np.meshgrid(gwh_l, sens_l)
-mean_tv = np.zeros_like(X)
-std_tv = np.zeros_like(X)
-frac = np.zeros_like(X)
-mean_lpf = np.zeros_like(X)
-n_joint = np.zeros_like(X)
-frac_onaxis = np.zeros_like(X)
-n_jointO3 = len(gw_vla_O3)
-n_jointO2 = len(gw_vla_O2)
-e0_l = ['500', '505', '510', '515', '520']
-mean_fluxes = dict([[a, np.zeros_like(gwh_l)] for a in e0_l])
-dev_fluxes = dict([[a, np.zeros_like(gwh_l)] for a in e0_l])
-fraction_l = dict([[a, np.zeros_like(gwh_l)] for a in e0_l])
-for i, gwh in enumerate(gwh_l):
-    ah = gwh / 1.58
-    total_events = len(df.loc[df['d'] < ah])
-    for j, s in enumerate(sens_l):
-        tmp_df = df[(1. + 6 * cos(df['tv']) ** 2 + cos(df['tv']) ** 4\
-            > 8 * df['d'] ** 2 / ah ** 2) & (df['lpf'] > s)]
-        on_axis_df = tmp_df.loc[tmp_df['tv'] < 0.1]
-        mean_tv[j, i] = tmp_df['tv'].mean()
-        std_tv[j, i] = np.std(tmp_df['tv'])
-        frac[j, i] = float(len(tmp_df)) / total_events
-        n_joint[j, i] = len(tmp_df)
-        frac_onaxis[j, i] = float(len(on_axis_df))/len(tmp_df)
-
-    for e0 in e0_l:
-        df_e0 = pd.read_csv(f"data/wp15_{e0}.data", sep=" ",
-            names=['ti', 'd', 'n', 'e0', 'eb',
-            'tv', 'tj', 'pt', 'pf'],
-            dtype={'ti': int, 'd': float, 'n': float, 'e0': float,
-            'eb': float, 'tv': float, 'tj': float, 'pt': float, 'pf': float})
-        df_e0['lpf'] = log(df_e0['pf'])
-        total_events = len(df_e0.loc[df_e0['d'] < ah])
-        tmp_gw = df_e0.loc[1. + 6 * cos(df_e0['tv']) ** 2 \
-                + cos(df_e0['tv']) ** 4\
-                > 8 * df_e0['d'] ** 2 / ah ** 2]
-        joint_events = float(len(tmp_gw.loc[tmp_gw['pf'] > vlas]))
-        mean_fluxes[e0][i] = tmp_gw['lpf'].mean()
-        dev_fluxes[e0][i] = np.std(tmp_gw['lpf'])
-        fraction_l[e0][i] = joint_events / total_events
-
-print("fig1")
-plt.figure()
-plt.xlabel("$H$ / Mpc")
-plt.ylabel(r"$\log(s/\mu {\rm Jy})$")
-plt.vlines(GWH_O2, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_O3, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_DESIGN, LS_MIN, LS_MAX, linestyles='dashed')
-plt.hlines(log(vlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(skas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(ngvlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.contourf(X, Y, mean_tv * 180 / Pi, cmap='jet')
-cbar = plt.colorbar()
-cbar.set_label(r'mean observed $\theta_v$ (deg)')
-plt.savefig(f"{PLOT_DIR}/fig1.pdf", bbox_inches = 'tight')
-
-print("fig45")
-plt.figure()
-plt.xlabel("$H$ / Mpc")
-plt.ylabel(r"$\log(s/\mu {\rm Jy})$")
-plt.vlines(GWH_O2, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_O3, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_DESIGN, LS_MIN, LS_MAX, linestyles='dashed')
-plt.hlines(log(vlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(skas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(ngvlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.contourf(X, Y, 100 * frac_onaxis, cmap='jet')
-cbar = plt.colorbar()
-cbar.set_label(r'fraction on axis ($\theta_v \leq \theta_j$) (\%)')
-plt.savefig(f"{PLOT_DIR}/fig45.pdf", bbox_inches = 'tight')
-
-print("fig2")
-plt.figure()
-plt.xlabel("Horizon / Mpc")
-plt.ylabel("log(Radio sensitivity/muJy)")
-plt.vlines(GWH_O2, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_O3, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_DESIGN, LS_MIN, LS_MAX, linestyles='dashed')
-plt.hlines(log(vlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(skas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(ngvlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.contourf(X, Y, std_tv * 180 / Pi, cmap='jet')
-cbar = plt.colorbar()
-cbar.set_label(r'observed $\theta_v$ width (deg)')
-plt.savefig(f"{PLOT_DIR}/fig2.pdf", bbox_inches = 'tight')
-
-print("fig3")
-plt.figure()
-plt.xlabel("Horizon / Mpc")
-plt.ylabel("log(Radio sensitivity/muJy)")
-plt.vlines(GWH_O2, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_O3, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_DESIGN, LS_MIN, LS_MAX, linestyles='dashed')
-plt.hlines(log(vlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(skas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(ngvlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.contourf(X, Y, frac * 100, cmap='jet')
-cbar = plt.colorbar()
-cbar.set_label("fraction of joint detections in total events (%)")
 plt.savefig(f"{PLOT_DIR}/fig3.pdf", bbox_inches='tight')
 
-print("fig4")
+print("figure 6a")
 plt.figure()
-plt.xlabel("D / Mpc")
-plt.ylabel("$\log(F_p/\mu Jy)$")
-plt.hlines(log(vlas), 0, AH_O3, linestyles='dashed')
-plt.hlines(log(skas), 0, AH_O3, linestyles='dashed')
-plt.hlines(log(ngvlas), 0, AH_O3, linestyles='dashed')
-plt.hist2d(gw_O3['d'], gw_O3['lpf'], cmap="jet", bins=BINS)
-plt.colorbar()
-plt.savefig(f"{PLOT_DIR}/fig4.pdf", bbox_inches='tight')
+hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
+plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
+plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="grey")
+for mag_lim in [21, 20, 19, 18]:
+    c = cmap((21 - mag_lim)/(21 - 18))
+    tmp = gw_O4.loc[gw_O4['r'] < mag_lim]
+    tmp2= tmp.loc[tmp['r1'] > 45]
+    hist, edges = np.histogram(tmp['tv'] / Deg, bins=BINS)
+    hist2, edges2 = np.histogram(tmp2['tv'] / Deg, bins=BINS)
+    plt.plot(edges[:-1], hist, color=c, linestyle="--")
+    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle="-")
 
 
-print("fig8")
-plt.figure()
-lab = {'500': '50.', "505": '50.5', '510': '51.', "515": '51.5', '520': "52.0"}
-for e0 in e0_l:
-    plt.plot(gwh_l, mean_fluxes[e0], label=r"$\log(E_m/{\rm erg})$ = " + lab[e0])
-plt.xlabel("$H$ / Mpc")
-plt.ylabel("Mean $F_p$ of GW events ($\mu$Jy)")
-plt.hlines(log(vlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(skas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(ngvlas), GWH_MIN, GWH_MAX, linestyles='dashed')
+plt.axvspan(0, 0.1 / Deg, color="grey", alpha=0.5)
+plt.xlabel(r"$\theta_v$ [deg]")
+plt.tick_params(labelleft=False)
+plt.xlim(0, 90)
+plt.ylim(0)
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/fig8.pdf", bbox_inches='tight')
-plt.close("All")
+plt.savefig(f"{PLOT_DIR}/fig6a.pdf", bbox_inches='tight')
 
-print(f"fig9")
+print("figure 6b")
 plt.figure()
-plt.hist([gw_max['d'] / AH_MAX, gw_vla_O3['d'] / AH_O3,
-    gw_ska_design['d'] / AH_DESIGN],
-        label=['GW only', 'Joint (O3+VLA)', 'Joint (Design+SKA)'],
-        histtype='step', bins=BINS, density=True)
-plt.xlabel(r"$D / \bar{H}$")
-plt.ylabel(r"d$N$/d($D/\bar{H}$)")
-plt.legend(loc="upper left")
-plt.savefig(f"{PLOT_DIR}/fig9.pdf", bbox_inches='tight')
-plt.close()
+hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
+plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="grey")
+plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
+for mag_lim in [21, 20, 19, 18]:
+    c = cmap((21 - mag_lim)/(21 - 18))
+    tmp = gw_O4.loc[gw_O4['r'] < mag_lim]
+    tmp2= tmp.loc[tmp['r10'] > 45]
+    hist, edges = np.histogram(tmp['tv'] / Deg, bins=BINS)
+    hist2, edges2 = np.histogram(tmp2['tv'] / Deg, bins=BINS)
+    plt.plot(edges[:-1], hist, color=c, linestyle="--")
+    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle="-")
 
-print("fig10")
-plt.figure()
-plt.xlabel("$H$ / Mpc")
-plt.ylabel(r"$\log(s/\mu {\rm Jy})$")
-plt.vlines(GWH_O2, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_O3, LS_MIN, LS_MAX, linestyles='dashed')
-plt.vlines(GWH_DESIGN, LS_MIN, LS_MAX, linestyles='dashed')
-plt.hlines(log(vlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(skas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.hlines(log(ngvlas), GWH_MIN, GWH_MAX, linestyles='dashed')
-plt.contourf(X, Y, log(3. * n_joint / n_jointO3) , cmap='jet')
-cbar = plt.colorbar()
-cbar.set_label("$log(N_J)$")
-plt.savefig(f"{PLOT_DIR}/fig10.pdf", bbox_inches='tight')
 
-#print(f"fig11")
-#plt.figure()
-#frame = pd.read_csv("pf_tv.data", sep=" ",
-#        names=['tv', 'ts', 'fs', 'ta', 'fa'])
-#plt.plot(180 * frame['tv'] / Pi, frame['fs'], label="simplified")
-#plt.plot(180 * frame['tv'] / Pi, frame['fa'], label="analytical")
-#frame = pd.read_csv("data/structuredjet_daigne_better.data",
-#        sep=" ", names=['tv', 'a', 'b', 'c', 'd', 'e', 'fc'])
-#plt.plot(frame['tv'], 1000 * frame['fc'], label="complete")
-#plt.xlabel(r"$\theta_v$ (deg)")
-#plt.ylabel("$F_P$ $\mu Jy$")
-#plt.yscale("log")
-#plt.xscale("log")
-#plt.legend()
-#plt.savefig(f"{PLOT_DIR}/fig11.pdf", bbox_inches='tight')
-#plt.close()
-
-print(f"fig12")
-plt.figure()
-plt.hist([gw_O2['lpf'], gw_O3['lpf'], gw_design['lpf']],
-        label=['O2', 'O3', 'Design'],
-        histtype='step', bins=BINS, density=True)
-plt.xlabel("$\log(F_P / \mu Jy)$")
-plt.ylabel("$dN/d\log(F_P)$")
+plt.axvspan(0, 0.1 / Deg, color="grey", alpha=0.5)
+plt.xlabel(r"$\theta_v$ [deg]")
+plt.tick_params(labelleft=False)
+plt.xlim(0, 90)
+plt.ylim(0)
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/fig12.pdf", bbox_inches='tight')
-plt.close()
-
-print(f"fig13")
-plt.figure()
-plt.hist([180 * df['tv'] / Pi,
-        180 * gw_O2['tv'] / Pi,
-        180 * gw_vla_O3['tv']/Pi],
-        label=['All events', 'GW only', ' Joint (O3+VLA)'],
-        histtype='step', bins=BINS, density=True, linewidth=1.2)
-plt.xlabel(r"$\theta_v$ (deg)")
-plt.ylabel(r"d$N$/d$\theta_v$")
-plt.legend()
-plt.savefig(f"{PLOT_DIR}/fig13.pdf", bbox_inches='tight')
-plt.close()
-
-print("fig14")
-plt.figure()
-plt.xlabel("D / Mpc")
-plt.ylabel(r"$\theta_v$")
-plt.hist2d(gw_vla_O3['d'], 180 * gw_vla_O3['tv'] / Pi, cmap="jet", bins=BINS,
-        label="$d^2 N/dDd\theta_v$")
-plt.colorbar()
-plt.savefig(f"{PLOT_DIR}/fig14.pdf", bbox_inches='tight')
-
-# print("fig15")
-# plt.figure()
-# plt.xlabel("D / Mpc")
-# plt.ylabel("log(PM / (mas/d))")
-# plt.hist2d(gw_vla_O3['d'], gw_vla_O3['laas'], cmap="jet", bins=BINS,
-#         label = "$d^2 N / dDdPM$")
-# plt.colorbar()
-# plt.savefig(f"{PLOT_DIR}/fig15.pdf", bbox_inches='tight')
-
-print("fig16")
-plt.figure()
-for e0 in e0_l:
-    plt.plot(gwh_l, 100 * fraction_l[e0], label="$\log(E_m) = $" + f"{e0}")
-plt.xlabel("H/Mpc")
-plt.ylabel("\% fraction of joint detections with VLA")
-plt.vlines([GWH_O2, GWH_O3, GWH_DESIGN],
-        0, 15, linestyles='dashed')
-plt.legend()
-plt.savefig(f"{PLOT_DIR}/fig16.pdf", bbox_inches='tight')
-plt.close("All")
-
-# print("fig17")
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# ax2 = ax1.twiny()
-# ax1.set_xlabel("$\log(F_X/\mu $Jy$)$")
-# ax1.hist([gw_O2['lpfx'], gw_O3['lpfx'],
-#         gw_design['lpfx']],
-#         label=['O2', 'O3', 'Design'],
-#         histtype='step', bins=BINS, density=True)
-# new_tick_locations = ax1.get_xticks()
-
-# def tick_function(X):
-#     V = X - 10.63
-#     return ["%.1f" % z for z in V]
-#
-# ax2.set_xlim(ax1.get_xlim())
-# ax2.set_xticks(new_tick_locations)
-# ax2.set_xticklabels(tick_function(new_tick_locations))
-# ax2.set_xlabel(r"$\log(F_{[0.3-10]keV}~/~{\rm erg/s/cm}^2)$")
-# ax1.legend()
-# plt.savefig(f"{PLOT_DIR}/fig17.pdf", bbox_inches='tight')
-
-#
-# print("fig20")
-# plt.figure()
-#
-# plt.plot([40.], [2.],
-#         "s", label="O2+VLA")
-# plt.plot(gw_vla_O3['d'][2243:2245], gw_vla_O3['lpf'][2243:2245],
-#         "s", label="O3+VLA")
-# plt.plot(gw_ska_max['d'][2243:2264], gw_ska_max['lpf'][2243:2264],
-#         "s", label="700Mpc horizon + SKA")
-# plt.xlabel("Distance (Mpc)")
-# plt.ylabel("$\log(F_p / \mu$Jy$)$")
-# plt.legend()
-# plt.savefig(f"{PLOT_DIR}/fig20.pdf", bbox_inches='tight')
+plt.savefig(f"{PLOT_DIR}/fig6b.pdf", bbox_inches='tight')

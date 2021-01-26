@@ -28,12 +28,12 @@ int main(int argc, char ** argv){
     d = d_max * pow(rd(), 1./3);
     tv = acos(rd());
 
-    g = kngmagwall(tv, d);
-    r = knrmagwall(tv, d);
-    i = knimagwall(tv, d);
-    z = knzmagwall(tv, d);
+    g = kngmagwall(tv, d) + (2 * rd() - 1);
+    r = knrmagwall(tv, d) + (2 * rd() - 1);
+    i = knimagwall(tv, d) + (2 * rd() - 1);
+    z = knzmagwall(tv, d) + (2 * rd() - 1);
     r1 = peak_flux_kn(1., d, tv);
-    r10 = peak_flux_kn(1., d, tv);
+    r10 = peak_flux_kn(10., d, tv);
     fprintf(stdout, "%e %e %e %e %e %e %e %e\n",
         d / Mpc, tv, g, r, i, z, r1 / microJy, r10 / microJy);
   }

@@ -124,6 +124,10 @@ def STR(l):
         ret = ret + ("%s " % str(a))
     return ret
 
+def lsub(a, x, y):
+    """Return the value of y closest to the result of a inter polation of y over x"""
+    return y[min(range(len(x)), key=lambda t:np.abs(a - x[t]))]
+
 def fit_err(dic):
     """Calculate the fitting chi2 with configuration read in dic"""
     write_conf_file(TMP_CONF_FILE, dic)
@@ -285,10 +289,14 @@ def peak_patch_luminosity(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
                  * bpl(nuobs * g * (1 - beta), nup, a, b)
                  / (g * (1 - beta))**2)
     else:
-        theta_p = 1 * (chic - 0.5 * r)
-        return ((Eiso * cLight) / (4 * Pi * re) * deltaphi(chic, r, theta_p)
-                 * bpl(nuobs * g * (1 - beta * cos(theta_p)), nup, a, b)
-                 / (g * (1 - beta * cos(theta_p)))**2)
+        theta_peak = 1 * (chic - 0.5 * r)
+        return ((Eiso * cLight) / (4 * Pi * re) * deltaphi(chic, r, theta_peak)
+                 * bpl(nuobs * g * (1 - beta * cos(theta_peak)), nup, a, b)
+                 / (g * (1 - beta * cos(theta_peak)))**2)
+
+def toy_esd(t):
+    # in erg/s in the XRT band
+    return 1.e48 * (t/1.e2) ** (-3)
 
 def toy_plateau(t):
     maxi = 1.e46 / ((30 - 0.3) * keV / hPlanck)

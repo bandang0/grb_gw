@@ -45,8 +45,9 @@ with fits.open('data/plateau_03.fits') as hdul:
     data = hdul[1].data
     tobs = data['tobs']
 
-L_los = XRT_c * np.array([simple_hle_patch(t, nuobs, 0, r_los, te_los, re_los, Gamma_los, Eiso_los, nup, a, b)
-      for t in tobs])
+#L_los = XRT_c * np.array([simple_hle_patch(t, nuobs, 0, r_los, te_los, re_los, Gamma_los, Eiso_los, nup, a, b)
+#      for t in tobs])
+L_los = toy_esd(tobs)
 L_plateau = data['dtheta=0.03']
 plt.plot(tobs - tobs_los, L_los + L_plateau, color="black")
 plt.plot(tobs - tobs_los, L_los, color="grey", linestyle="--", linewidth=0.8)
@@ -327,8 +328,8 @@ plt.ylabel(f"Luminosity [0.3-30] keV (erg/s)")
 plt.xlabel("Time since last prompt pulse (s)")
 plt.xscale('log')
 plt.yscale('log')
-plt.ylim([1.e45, 5.e51])
-plt.xlim([50, 40000])
+plt.ylim([1.e46, 5.e50])
+plt.xlim([50, 10000])
 plt.legend(loc='upper right')
 plt.savefig(f"{PLOT_DIR}/{FILE_NAME}.pdf", bbox_inches='tight')
 
