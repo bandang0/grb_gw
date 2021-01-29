@@ -289,10 +289,10 @@ def peak_patch_luminosity(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
                  * bpl(nuobs * g * (1 - beta), nup, a, b)
                  / (g * (1 - beta))**2)
     else:
-        theta_peak = 1 * (chic - 0.5 * r)
-        return ((Eiso * cLight) / (4 * Pi * re) * deltaphi(chic, r, theta_peak)
-                 * bpl(nuobs * g * (1 - beta * cos(theta_peak)), nup, a, b)
-                 / (g * (1 - beta * cos(theta_peak)))**2)
+        tm = te - re * cos(max(0., chic - r)) / cLight
+        tM = te - re * cos(min(Pi, chic + r)) / cLight
+        T = 10 ** np.linspace(log(tm), log(tM), 5)
+        return np.max([simple_hle_patch(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b) for t in T])
 
 def toy_esd(t):
     # in erg/s in the XRT band

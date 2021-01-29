@@ -84,12 +84,12 @@ for band in ['g', 'r', 'i']:
 
     # the fisrt subplot
     ax0 = plt.subplot(gs[0])
-    ax0.hist2d(tmp['tv'] / Deg, tmp[band], range = [[0, 90], [16, 24]], bins=BINS, cmin=1,
+    ax0.hist2d(tmp['tv'] / Deg, tmp[band], range = [[0, 90], [10.95, 26]], bins=BINS, cmin=1,
                 cmap = cmap_d[band])
     ax0.errorbar([15], mag_170817[band], xerr=[[2.46], [1.64]], color=c_d[band])
     ax0.text(20, mag_170817[band], "AT2017gfo")
     ax0.set_xlim(0, 90)
-    ax0.set_ylim(24, 16)
+    ax0.set_ylim(26, 16)
     ax0.hlines(mag_lim_d[band], xmin=0, xmax=90, linestyle="--", linewidth=thin, color="grey")
     ax0.set_ylabel(tex_d[band])
 
@@ -115,6 +115,7 @@ for band in ['g', 'r', 'i']:
 
 
 print("figure 4")
+plt.close("All")
 hmax = 1
 for mag_lim in [22, 19, 20, 21]:
     plt.figure()
@@ -173,6 +174,7 @@ for mag_lim in [22, 19, 20, 21]:
     plt.savefig(f"{PLOT_DIR}/fig4_{mag_lim}.pdf", bbox_inches='tight')
 
 print("figure 1a")
+plt.close("All")
 plt.figure()
 hist, edges = np.histogram(gw_O5['d'] / GWH_O5, density=True, bins=BINS)
 plt.plot(edges[:-1], hist)
@@ -223,11 +225,13 @@ plt.xlabel(r"$\theta_v$ [deg]")
 plt.savefig(f"{PLOT_DIR}/fig1d.pdf", bbox_inches='tight')
 
 print("figure 2a")
+plt.close("All")
 plt.figure()
 for f in ['g', 'r', 'i', 'z']:
-    hist, edges = np.histogram(gw_O4[f], density=True, bins=BINS, range=[16, 24])
+    print(f"{f}: {np.max(gw_O4[f])}, {np.min(gw_O4[f])}")
+    hist, edges = np.histogram(gw_O4[f], density=True, bins=BINS, range=[10.95, 26])
     plt.plot(edges[:-1], hist, label=f, color=colors[f])
-plt.xlim(24, 16)
+plt.xlim(26, 16)
 plt.ylim(0)
 plt.xlabel("AB magnitude")
 plt.legend()
@@ -265,6 +269,7 @@ plt.legend()
 plt.savefig(f"{PLOT_DIR}/fig2b.pdf", bbox_inches='tight')
 
 print("figure 3")
+plt.close("All")
 plt.figure()
 hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
 plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="black")
@@ -291,6 +296,7 @@ plt.legend()
 plt.savefig(f"{PLOT_DIR}/fig3.pdf", bbox_inches='tight')
 
 print("figure 6a")
+plt.close("All")
 plt.figure()
 hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
 plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
