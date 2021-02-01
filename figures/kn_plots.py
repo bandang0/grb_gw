@@ -17,14 +17,27 @@ DATA_FILE_O5 = "data/kn_O5.data"
 DATA_FILE_MAX = "data/kn_max.data"
 DATA_FILE_190425 = "data/kn_190425.data"
 PLOT_DIR = f"plots/kn_plots"
+
+if 'test' in argv:
+    print("Testing mode")
+    DATA_FILE_O3 = "data/kn_O3_test.data"
+    DATA_FILE_O4 = "data/kn_O4_test.data"
+    DATA_FILE_O5 = "data/kn_O5_test.data"
+    DATA_FILE_MAX = "data/kn_max_test.data"
+    DATA_FILE_190425 = "data/kn_190425_test.data"
+
 plt.style.use('presentation')
 BINS = 80
 thin = 1.
 
-colors = {"g": "green",
-            "r": "red",
-            "i": "black",
-            "z": "blue"}
+
+# Bands and printing constants
+bands_d = ['g', 'r', 'i', 'z']
+mag_lim_d = {'g': 21, 'r': 21, 'i': 21.5}
+cmap_d = {'g': 'Greens', 'r': 'Reds', 'i': 'Greys'}
+c_d = {'g': 'green', 'r': 'red', 'i': 'black', "z": 'blue'}
+tex_d = {'g': r'$g$', 'r': r'$r$', 'i': r'$i$', 'z': r'$z$'}
+
 # Constants
 g0 = 100.
 GWH_O3 = 157.
@@ -35,7 +48,7 @@ GWH_MAX = 650.
 vlas = 15.
 mag_170817={'r': 17.30, 'g': 17.18, 'i':17}
 
-print(f"Collecting data from data file")
+print(f"Collecting data from data files")
 df_O3 = pd.read_csv(DATA_FILE_O3, sep=" ",
         names=['d', 'tv', 'g', 'r', 'i', 'z', 'r1', 'r10'])
 
@@ -51,7 +64,13 @@ df_max = pd.read_csv(DATA_FILE_MAX, sep=" ",
 df_190425 = pd.read_csv(DATA_FILE_190425, sep=" ",
         names=['d', 'tv', 'g', 'r', 'i', 'z', 'r1', 'r10'])
 
-print(f"Total elements: {len(df_O3['d'])}.")
+print(f"Total elements:\n"
+f"O3:     {len(df_O3['d']):3.2e}\n"
+f"O4:     {len(df_O4['d']):3.2e}\n"
+f"O5:     {len(df_O5['d']):3.2e}\n"
+f"max:    {len(df_max['d']):3.2e}\n"
+f"190425: {len(df_190425['d']):3.2e}")
+
 gw_O5 = df_O5.loc[1. + 6. * cos(df_O5['tv']) ** 2 + cos(df_O5['tv']) ** 4\
             > 8 * df_O5['d'] ** 2 / GWH_O5 ** 2]
 gw_O4 = df_O4.loc[1. + 6. * cos(df_O4['tv']) ** 2 + cos(df_O4['tv']) ** 4\
@@ -63,22 +82,26 @@ gw_190425 = df_190425.loc[1. + 6. * cos(df_190425['tv']) ** 2 + cos(df_190425['t
 r_max_O3 = gw_O3['r'].max()
 r_max_O4 = gw_O4['r'].max()
 r_max_O5 = gw_O5['r'].max()
+N_O3 = len(gw_O3)
+N_O4 = len(gw_O4)
+N_O5 = len(gw_O5)
 
 x_0 = 1 / sqrt(8)
 x_m = gw_O5['d'].median() / GWH_O5
 t_m = gw_O5['tv'].median() / Deg
 
+print("Report fractions in all bands")
+print(" : {:>5} {:>5} {:>5} | {:>5} {:>5} {:>5} | {:>5} {:>5} {:>5}".format("O3", "O4", "O5", "O3", "O4", "O5", "O3", "O4", "O5"))
+for band in bands_d:
+    print(f"{band}: {100 * len(gw_O3[gw_O3[band] < 18]) / N_O3:5.3g} {100 * len(gw_O4[gw_O4[band] < 18]) / N_O4:5.3g} {100 * len(gw_O5[gw_O5[band] < 18]) / N_O5:5.3g} | {100 * len(gw_O3[(gw_O3[band] > 18) & (gw_O3[band] < 20)]) / N_O3:5.3g} {100 * len(gw_O4[(gw_O4[band] > 18) & (gw_O4[band] < 20)]) / N_O4:5.3g} {100 * len(gw_O5[(gw_O5[band] > 18) & (gw_O5[band] < 20)]) / N_O5:5.3g} | {100 * len(gw_O3[gw_O3[band] > 20]) / N_O3:5.3g} {100 * len(gw_O4[gw_O4[band] > 20]) / N_O4:5.3g} {100 * len(gw_O5[gw_O5[band] > 20]) / N_O5:5.3g}")
+
 print("figure 5")
 histgw, edgesgw = np.histogram(gw_O5['tv'] / Deg, density=True, bins=BINS)
-mag_lim_d = {'g': 21, 'r': 21, 'i': 21.5}
-cmap_d = {'g': 'Greens', 'r': 'Reds', 'i': 'Greys'}
-c_d = {'g': 'green', 'r': 'red', 'i': 'grey'}
-tex_d = {'g': r'$g$', 'r': r'$r$', 'i': r'$i$'}
 tmp = gw_190425.loc[(gw_190425['d'] < 159 + 69) & (gw_190425['d'] > 159 - 71)]
 all_obs = tmp.loc[(tmp['r'] > 21) & (tmp['g'] > 21) & (tmp['i'] > 21.5)]
 print(f"Under 190425, theta = {np.percentile(all_obs['tv'], 5) / Deg:.2f}, {all_obs['tv'].median() / Deg:.2f}, {np.percentile(all_obs['tv'], 95) / Deg:.2f}.")
 for band in ['g', 'r', 'i']:
-    plt.figure()
+    plt.figure(figsize=(4.3, 6.45))
     obs = tmp.loc[tmp[band] > mag_lim_d[band]]
     gs = gridspec.GridSpec(2, 1, height_ratios=[2, 1])
 
@@ -149,9 +172,10 @@ for mag_lim in [22, 19, 20, 21]:
     h3 = plt.hist2d(red['d'], red['tv'] / Deg, range=[[0, 650], [0, 90]], cmin = 1,
         bins=BINS, cmap="Reds", norm=Normalize(0, hmax))
 
-    plt.text(350, 60, f"GW w/o KN: {r1:.2f} /yr")
-    plt.text(350, 55, f"GW w/ KN: {r2:.2f} /yr")
-    plt.text(350, 50, f"KN w/o GW: {r3:.2f} /yr")
+    plt.text(500, 80, r"$r > $" + f" {mag_lim}", fontsize="larger")
+    plt.text(350, 60, f"GW w/o KN: {r1:4.3g} /yr", family="monospace")
+    plt.text(350, 55, f"GW w/  KN: {r2:4.3g} /yr", family="monospace")
+    plt.text(350, 50, f"KN w/o GW: {r3:4.3g} /yr", family="monospace")
 
 
     d_l = np.linspace(GWH_O4/sqrt(8), GWH_O4, 200)
@@ -180,7 +204,7 @@ hist, edges = np.histogram(gw_O5['d'] / GWH_O5, density=True, bins=BINS)
 plt.plot(edges[:-1], hist)
 plt.vlines(x = x_0, ymin = 0, ymax=lsub(x_0, edges, hist), linestyle="--", linewidth=thin, color="grey")
 plt.vlines(x = x_m, ymin = 0, ymax=lsub(x_m, edges, hist), linestyle="--", linewidth=thin, color="grey")
-plt.text(x_0, 0.4, r"$D / D_H = 1/\sqrt{8}$", rotation=90)
+plt.text(x_0, 0.4, r"$D_0 = D_H/\sqrt{8}$", rotation=90)
 plt.text(x_m, 0.4, r"median", rotation=90)
 plt.xlim(0, 1)
 plt.ylim(0, 2)
@@ -194,7 +218,7 @@ hist = np.cumsum(hist) / BINS
 plt.plot(edges[:-1], hist)
 plt.vlines(x = x_0, ymin = 0, ymax=lsub(x_0, edges, hist), linestyle="--", linewidth=thin, color="grey")
 plt.vlines(x = x_m, ymin = 0, ymax=lsub(x_m, edges, hist), linestyle="--", linewidth=thin, color="grey")
-plt.text(x_0, 0.3, r"$D / D_H = 1/\sqrt{8}$", rotation=90)
+plt.text(x_0, 0.3, r"$D_0= D_H /\sqrt{8}$", rotation=90)
 plt.text(x_m, 0.3, r"median", rotation=90)
 plt.xlim(0, 1)
 plt.ylim(0, 1)
@@ -227,10 +251,11 @@ plt.savefig(f"{PLOT_DIR}/fig1d.pdf", bbox_inches='tight')
 print("figure 2a")
 plt.close("All")
 plt.figure()
-for f in ['g', 'r', 'i', 'z']:
-    print(f"{f}: {np.max(gw_O4[f])}, {np.min(gw_O4[f])}")
+print("Maximum and minimum magnitudes for O4 GW events")
+for f in bands_d:
+    print(f"{f}: {np.max(gw_O4[f]):7.5g}, {np.min(gw_O4[f]):7.5g}")
     hist, edges = np.histogram(gw_O4[f], density=True, bins=BINS, range=[10.95, 26])
-    plt.plot(edges[:-1], hist, label=f, color=colors[f])
+    plt.plot(edges[:-1], hist, label=tex_d[f], color=c_d[f])
 plt.xlim(26, 16)
 plt.ylim(0)
 plt.xlabel("AB magnitude")
@@ -244,12 +269,12 @@ hist3, edges3 = np.histogram(gw_O3['r'], bins=BINS)
 hist4, edges4 = np.histogram(gw_O4['r'], bins=BINS)
 hist5, edges5 = np.histogram(gw_O5['r'], bins=BINS)
 hist3 = np.cumsum(hist3)
-alpha = hist3[-1] / 5
 hist4 = np.cumsum(hist4)
 hist5 = np.cumsum(hist5)
-rate3 = hist3 / alpha
-rate4 = hist4 * (GWH_O4 / GWH_O3)**3 / alpha
-rate5 = hist5 * (GWH_O5 / GWH_O3)**3 / alpha
+alpha = hist4[-1] / 10.
+rate3 = hist3 * (GWH_O3 / GWH_O4) ** 3 / alpha
+rate4 = hist4 / alpha
+rate5 = hist5 * (GWH_O5 / GWH_O4) ** 3 / alpha
 plt.plot(np.append(edges5[:-1], 26), np.append(rate5, rate5[-1]), "-", label="O5", color="black")
 plt.plot(np.append(edges4[:-1], 26), np.append(rate4, rate4[-1]), "--", label="O4", color="black")
 plt.plot(np.append(edges3[:-1], 26), np.append(rate3, rate3[-1]), "-.", label="O3", color="black")
@@ -304,7 +329,7 @@ plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="grey")
 for mag_lim in [21, 20, 19, 18]:
     c = cmap((21 - mag_lim)/(21 - 18))
     tmp = gw_O4.loc[gw_O4['r'] < mag_lim]
-    tmp2= tmp.loc[tmp['r1'] > 45]
+    tmp2= tmp.loc[tmp['r1'] > 3 * vlas]
     hist, edges = np.histogram(tmp['tv'] / Deg, bins=BINS)
     hist2, edges2 = np.histogram(tmp2['tv'] / Deg, bins=BINS)
     plt.plot(edges[:-1], hist, color=c, linestyle="--")
@@ -327,7 +352,7 @@ plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
 for mag_lim in [21, 20, 19, 18]:
     c = cmap((21 - mag_lim)/(21 - 18))
     tmp = gw_O4.loc[gw_O4['r'] < mag_lim]
-    tmp2= tmp.loc[tmp['r10'] > 45]
+    tmp2= tmp.loc[tmp['r10'] > 3 * vlas]
     hist, edges = np.histogram(tmp['tv'] / Deg, bins=BINS)
     hist2, edges2 = np.histogram(tmp2['tv'] / Deg, bins=BINS)
     plt.plot(edges[:-1], hist, color=c, linestyle="--")
