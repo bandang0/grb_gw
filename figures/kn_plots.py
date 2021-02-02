@@ -46,7 +46,7 @@ GWH_O5 = 472.
 GWH_190425 = 181.
 GWH_MAX = 650.
 vlas = 15.
-mag_170817={'r': 17.30, 'g': 17.18, 'i':17}
+mag_170817={'r': 17.14, 'g': 17.28, 'i':16.99, 'z': 16.85}
 
 print(f"Collecting data from data files")
 df_O3 = pd.read_csv(DATA_FILE_O3, sep=" ",
@@ -91,9 +91,9 @@ x_m = gw_O5['d'].median() / GWH_O5
 t_m = gw_O5['tv'].median() / Deg
 
 print("Report fractions in all bands")
-print(" : {:>5} {:>5} {:>5} | {:>5} {:>5} {:>5} | {:>5} {:>5} {:>5}".format("O3", "O4", "O5", "O3", "O4", "O5", "O3", "O4", "O5"))
+print(" : {:>5} {:>5} {:>5} {:>5} | {:>5} {:>5} {:>5} {:>5} | {:>5} {:>5} {:>5} {:>5}".format("O3", "O4", "O4*", "O5", "O3", "O4", "O4*", "O5", "O3", "O4", "O4*", "O5"))
 for band in bands_d:
-    print(f"{band}: {100 * len(gw_O3[gw_O3[band] < 18]) / N_O3:5.3g} {100 * len(gw_O4[gw_O4[band] < 18]) / N_O4:5.3g} {100 * len(gw_O5[gw_O5[band] < 18]) / N_O5:5.3g} | {100 * len(gw_O3[(gw_O3[band] > 18) & (gw_O3[band] < 20)]) / N_O3:5.3g} {100 * len(gw_O4[(gw_O4[band] > 18) & (gw_O4[band] < 20)]) / N_O4:5.3g} {100 * len(gw_O5[(gw_O5[band] > 18) & (gw_O5[band] < 20)]) / N_O5:5.3g} | {100 * len(gw_O3[gw_O3[band] > 20]) / N_O3:5.3g} {100 * len(gw_O4[gw_O4[band] > 20]) / N_O4:5.3g} {100 * len(gw_O5[gw_O5[band] > 20]) / N_O5:5.3g}")
+    print(f"{band} & {100 * len(gw_O3[gw_O3[band] < 18]) / N_O3:5.3g} & {100 * len(gw_O4[gw_O4[band] < 18]) / N_O4:5.3g} & 1 & {100 * len(gw_O5[gw_O5[band] < 18]) / N_O5:5.3g} & {100 * len(gw_O3[(gw_O3[band] > 18) & (gw_O3[band] < 20)]) / N_O3:5.3g} & {100 * len(gw_O4[(gw_O4[band] > 18) & (gw_O4[band] < 20)]) / N_O4:5.3g} & 12 & {100 * len(gw_O5[(gw_O5[band] > 18) & (gw_O5[band] < 20)]) / N_O5:5.3g} & {100 * len(gw_O3[gw_O3[band] > 20]) / N_O3:5.3g} & {100 * len(gw_O4[gw_O4[band] > 20]) / N_O4:5.3g} & 87 & {100 * len(gw_O5[gw_O5[band] > 20]) / N_O5:5.3g} \\\\")
 
 print("figure 5")
 histgw, edgesgw = np.histogram(gw_O5['tv'] / Deg, density=True, bins=BINS)
@@ -152,10 +152,17 @@ for mag_lim in [22, 19, 20, 21]:
     tot1 = len(blue['d'])
     tot2 = len(green['d'])
     tot3 = len(red['d'])
+    grb = len(green[green['tv'] < 0.1]['d'])
+    kngrb = grb + len(red[red['tv'] < 0.1]['d'])
 
     r1 = 10 * tot1 / (tot1 + tot2)
     r2 = 10 * tot2 / (tot1 + tot2)
     r3 = 10 * tot3 / (tot1 + tot2)
+    rgrb = 10 * grb / (tot1 + tot2)
+    rkngrb = 10 * kngrb / (tot1 + tot2)
+    print(f"GW + KN + GRB: once every {1/rgrb:.5g} yr")
+    print(f"KN + GRB:      once every {1/rkngrb:.5g} yr")
+
 
     h1 = np.histogram2d(blue['d'], blue['tv'] / Deg, range=[[0, 650], [0, 90]],bins=BINS)
     h2 = np.histogram2d(green['d'], green['tv'] / Deg, range=[[0, 650], [0, 90]],bins=BINS)
@@ -188,7 +195,7 @@ for mag_lim in [22, 19, 20, 21]:
     plt.vlines(d_m, ymin = 60, ymax = 90, color="black")
 
     plt.axhspan(0, 0.1 / Deg, color="grey", alpha=0.5)
-    plt.text(30, 2, "on-axis")
+    plt.text(30, 2, "on-axis", fontsize="larger")
 
 
     plt.xlabel(r"$D$ [Mpc]")
@@ -298,7 +305,7 @@ plt.close("All")
 plt.figure()
 hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
 plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="black")
-plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
+plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90, fontsize="larger")
 for mag_lim in [21, 20, 19, 18]:
     c = cmap((21 - mag_lim)/(21 - 18))
     tmp = gw_O4.loc[gw_O4['r'] < mag_lim]
@@ -324,7 +331,7 @@ print("figure 6a")
 plt.close("All")
 plt.figure()
 hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
-plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
+plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90, fontsize="larger")
 plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="grey")
 for mag_lim in [21, 20, 19, 18]:
     c = cmap((21 - mag_lim)/(21 - 18))
@@ -348,7 +355,7 @@ print("figure 6b")
 plt.figure()
 hist, edges = np.histogram(gw_O4['tv'] / Deg, bins = BINS)
 plt.plot(edges[:-1], hist, linestyle=":", label="GW events", color="grey")
-plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90)
+plt.text(2, 6 * max(hist) / 7, "on-axis", rotation=90, fontsize="larger")
 for mag_lim in [21, 20, 19, 18]:
     c = cmap((21 - mag_lim)/(21 - 18))
     tmp = gw_O4.loc[gw_O4['r'] < mag_lim]
