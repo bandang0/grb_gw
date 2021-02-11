@@ -150,11 +150,3 @@ for g in [200, 400]:
         if g >= 1000:
             plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='xx-small')
         plt.savefig(f"{PLOT_DIR}/{FILE_NAME}.pdf", bbox_inches='tight')
-
-        # plt.figure()
-        # plt.imshow(L, origin="lower", cmap = cmap, norm=Normalize(-3, 3))
-        # plt.colorbar()
-        # plt.ylabel(r"$t_{ej}$ [s]")
-        # plt.xlabel(r"$\tau (= \Delta t_{on})$ [s]")
-        # plt.title(r"$\Gamma =$" + f"{g}, "+ r"$\delta \theta / \theta_v = $" + f"{chi/tv:.2f}")
-        # plt.savefig(f"{PLOT_DIR}/{FILE_NAME}_map.pdf", bbox_inches='tight')

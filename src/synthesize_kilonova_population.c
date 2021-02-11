@@ -10,15 +10,15 @@
 int main(int argc, char ** argv){
 
   /* Results*/
-  double d, tv, g, r, i, z, r1, r10;
+  double d, tv, g0, r0, i0, z0, r1, r10;
 
   /* Distributions */
   int n_pop;
   int n_run;
   double d_max;
 
-  /* Jet constants */
-  srand(time(0));
+  /* Initialize random number generator */
+  srand48(time(0));
 
   /* read input */
   d_max = atoi(argv[1]) * Mpc;
@@ -28,13 +28,13 @@ int main(int argc, char ** argv){
     d = d_max * pow(rd(), 1./3);
     tv = acos(rd());
 
-    g = kngmagwall(tv, d) + (2 * rd() - 1);
-    r = knrmagwall(tv, d) + (2 * rd() - 1);
-    i = knimagwall(tv, d) + (2 * rd() - 1);
-    z = knzmagwall(tv, d) + (2 * rd() - 1);
+    g0 = kngmagwall(tv, d);
+    r0 = knrmagwall(tv, d);
+    i0 = knimagwall(tv, d);
+    z0 = knzmagwall(tv, d);
     r1 = peak_flux_kn(1., d, tv);
     r10 = peak_flux_kn(10., d, tv);
-    fprintf(stdout, "%e %e %e %e %e %e %e %e\n",
-        d / Mpc, tv, g, r, i, z, r1 / microJy, r10 / microJy);
+    fprintf(stdout, "%.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e\n",
+        d / Mpc, tv, g0, 2 * rd() - 1, r0, 2 * rd() - 1, i0, 2 * rd() - 1, z0, 2 * rd() - 1, r1 / microJy, r10 / microJy);
   }
 }

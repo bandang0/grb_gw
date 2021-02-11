@@ -160,37 +160,37 @@ double kngmag(double tv, double d){
 
 double kngmagwall(double tv, double d){
   if (tv < 60 * Deg){
-    return -17.6 + 7 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
+    return -16.347 + 7 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
   }
   else{
-    return -17.6 + 7 + 5. * log10(d / (10 * pc));
+    return -16.347 + 7 + 5. * log10(d / (10 * pc));
   }
 }
 
 double knrmagwall(double tv, double d){
   if (tv < 60 * Deg){
-    return -16.9 + 4 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
+    return -16.283 + 4 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
   }
   else{
-    return -16.9 + 4 + 5. * log10(d / (10 * pc));
+    return -16.283 + 4 + 5. * log10(d / (10 * pc));
   }
 }
 
 double knimagwall(double tv, double d){
   if (tv < 60 * Deg){
-    return -17.0 + 3.5 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
+    return -16.405 + 3.5 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
   }
   else{
-    return -17.0 + 3.5 + 5. * log10(d / (10 * pc));
+    return -16.405 + 3.5 + 5. * log10(d / (10 * pc));
   }
 }
 
 double knzmagwall(double tv, double d){
   if (tv < 60 * Deg){
-    return -16.8 + 2.5 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
+    return -16.466 + 2.5 * (1 - cos(tv)) / 0.5 + 5. * log10(d / (10 * pc));
   }
   else{
-    return -16.8 + 2.5 + 5. * log10(d / (10 * pc));
+    return -16.466 + 2.5 + 5. * log10(d / (10 * pc));
   }
 }
 
