@@ -1,0 +1,22 @@
+axes.titlesize : 24
+axes.labelsize : 20
+lines.linewidth : 1.5
+#lines.markersize : 10
+xtick.labelsize : large
+ytick.labelsize : large
+text.usetex : True
+font.family : DejaVu Sans
+font.serif : cm
+legend.fontsize : large
+xtick.direction : in
+ytick.direction : in
+xtick.minor.visible : True
+ytick.minor.visible : True
+xtick.top : True
+ytick.right : True
+xtick.major.pad : 7
+legend.framealpha : 0.9
+figure.autolayout : False
+patch.force_edgecolor  : True
+patch.linewidth : 0.5
+patch.edgecolor : black

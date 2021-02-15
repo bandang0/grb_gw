@@ -11,7 +11,7 @@ if 'test' in argv:
     filenames_d = [f"data/kn_{r}_test.data" for r in runs_d]
 else:
     print("Prod. mode...")
-    N = int(3e7)
+    N = int(2.e7)
     filenames_d = [f"data/kn_{r}.data" for r in runs_d]
 
 
