@@ -33,7 +33,7 @@ if 'test' in argv:
     DATA_FILE_190425 = "data/kn_190425_test.data"
 
 plt.style.use('presentation')
-BINS = 80
+BINS = 100
 thin = 1.
 
 
@@ -206,9 +206,9 @@ for mag_lim in [22, 21, 20, 19]:
         bins=BINS, cmap="Reds", norm=Normalize(0, hmax))
 
     plt.text(400, 80, r"$r > $" + f" {mag_lim}", fontsize="larger")
-    plt.text(250, 60, f"GW w/o KN: {r1:4.3g} /yr", family="monospace")
-    plt.text(250, 55, f"GW w/  KN: {r2:4.3g} /yr", family="monospace")
-    plt.text(250, 50, f"KN w/o GW: {r3:4.3g} /yr", family="monospace")
+    plt.text(250, 60, f"GW w/o KN: {r1:4.2g} /yr", family="monospace")
+    plt.text(250, 55, f"GW w/  KN: {r2:4.2g} /yr", family="monospace")
+    plt.text(250, 50, f"KN w/o GW: {r3:4.2g} /yr", family="monospace")
 
     d_l = np.linspace(GWH_O4/sqrt(8), GWH_O4, 200)
     plt.plot(d_l, [np.arccos(sqrt(-3 + sqrt(8) * sqrt(1 + d**2 / GWH_O4**2))) / Deg for d in d_l],
