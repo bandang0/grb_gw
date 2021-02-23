@@ -205,7 +205,7 @@ for mag_lim in [22, 21, 20, 19]:
     h3 = plt.hist2d(red.d, red.tv / Deg, range=[[0, 500], [0, 90]], cmin = 1,
         bins=BINS, cmap="Reds", norm=Normalize(0, hmax))
 
-    plt.text(400, 80, r"$r > $" + f" {mag_lim}", fontsize="larger")
+    plt.text(400, 80, r"$r_{\rm lim} = $" + f" {mag_lim}", fontsize="larger")
     plt.text(250, 60, f"GW w/o KN:", color="blue")
     plt.text(340, 60, f"{r1:4.2g} /yr")
     plt.text(250, 55, f"GW w/  KN:", color="green")
