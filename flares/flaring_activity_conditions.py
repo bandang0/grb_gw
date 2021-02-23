@@ -12,10 +12,9 @@ from helpers import *
 from sys import argv
 
 PLOT_DIR = f"plots/flares"
-plt.style.use('presentation')
 
 # Fixed parameters
-Eiso = 1.e52
+Eiso = 1.e54
 tj = 0.1
 tv = 0.13
 a = 0.
@@ -23,26 +22,26 @@ b = -1.5
 Ep = 1. * keV
 nup = Ep / hPlanck
 nuobs = 5.0 * keV / hPlanck
-
+nug = 75. * keV / hPlanck
 # Plateau data
-with fits.open('data/plateau_03.fits') as hdul:
-    data = hdul[1].data
-plateau = interp1d(data['tobs'], data['dtheta=0.03'], bounds_error=False, fill_value=0.)
+#with fits.open('data/plateau_03.fits') as hdul:
+    #data = hdul[1].data
+#plateau = interp1d(data['tobs'], data['dtheta=0.03'], bounds_error=False, fill_value=0.)
 
 # Flares to plot
-letters =['A', 'B', 'C','D', 'E',  'F', 'G',  'I',  'J', 'K', 'L']
-taus =   [1,   3,   0.8, 0.1, 1,   .7,  .2,   1,    4,    0.2, 9]
-tejs =   [60,  60,  60,  60,  15,  20,  0,    5,    0,    60,  80]
-gammas = [400, 200, 200, 200, 200, 400, 400,  400,  400,  400, 400]
-dts =    [.03, .08, .08, .08, .03, .08, .08,  0.03, 0.03, 0.03, 0.03]
+letters =['A', 'B',  'C',  'D', 'E',  'F', 'G',  'I',  'J', 'K', 'L']
+taus =   [5,    5,    0.8,  0.1, 1,   .7,  .2,   1,    4,    1, 9]
+tejs =   [100,   60,   60,   60,  50,  20,  0,    5,    0,    60,  80]
+gammas = [400,  200,  200,  200, 200, 400, 400,  400,  400,  400, 400]
+dts =    [.03,  .08,  .08,  .08, .03, .08, .08,  0.03, 0.03, 0.03, 0.03]
 
 print("Plotting flares over afterglow")
 plt.figure()
-tobs_l = np.logspace(-1.5, 4.5, 400)
-afterglow = interp1d(tobs_l, [plateau(u) + toy_esd(u) for u in tobs_l], bounds_error=False, fill_value = 0.)
-plt.plot(tobs_l, afterglow(tobs_l), color="black")
-plt.plot(tobs_l, toy_esd(tobs_l), color="grey", linestyle="--", linewidth=0.8)
-plt.plot(tobs_l, plateau(tobs_l), color="grey", linestyle="--",  linewidth=0.8)
+tobs_l = np.logspace(-1.5, 6, 1000)
+afterglow = toy_afterglow_wind#, [plateau(u) + toy_esd(u) for u in tobs_l], bounds_error=False, fill_value = 0.)
+plt.plot(tobs_l, [XRT_c * afterglow(ta) for ta in tobs_l], color="black")
+#plt.plot(tobs_l, toy_esd(tobs_l), color="grey", linestyle="--", linewidth=0.8)
+#plt.plot(tobs_l, plateau(tobs_l), color="grey", linestyle="--",  linewidth=0.8)
 
 for i in range(len(letters)):
     letter = letters[i]
@@ -55,14 +54,14 @@ for i in range(len(letters)):
     dia = 3 / Gamma
     r = dia / 2
     S = (1 - beta * cos(chi))/(1 - beta)
-    L_on = BAT_c * Eiso / (2 * Gamma * tau * nup)
     te = t_delay + re / (beta * cLight)
     tm = te - re * cos(max(0., chi - r)) / cLight
     tM = te - re * cos(min(Pi, chi + r)) / cLight
-    eta_t = (tM - tm) / (tm)
+    eta_t = (tM - tm) / tm
+    L_on = BAT_c * peak_patch_luminosity(nug, 0, r, te, re, Gamma, Eiso, nup, a, b)
     peak_patch = XRT_c * peak_patch_luminosity(nuobs, chi, r, te, re, Gamma, Eiso, nup, a, b)
     patch_afterglow = log(peak_patch / afterglow(tm))
-    print(f"{letter} & {Gamma} & {chi / tv:3.2f} & {tau} & {t_delay:3.2f} & {S:3.2f} & {re:3.2e} & {eta_t:3.2f} & -- & {L_on:3.2e} \\\\")
+    print(f"{letter} & {Gamma} & {chi / tv:3.2f} & {tau:3.2f} & {t_delay:6.2f} & {S:7.2f} & {re:3.2e} & {eta_t:3.2f} & {L_on:3.2e} \\\\")
 
     T = 10 ** np.linspace(log(tm), log(tM), 2000)
     L_p = XRT_c * np.array([simple_hle_patch(t, nuobs, chi, r, te, re, Gamma, Eiso, nup, a, b)
@@ -73,7 +72,7 @@ plt.ylabel(f"Luminosity [0.3-30] keV (erg/s)")
 plt.xlabel("Time (s)")
 plt.xscale('log')
 plt.yscale('log')
-plt.ylim([4.e44, 1.e51])
+plt.ylim([4.e43, 1.e51])
 plt.xlim(20, 1.e4)
 plt.legend(loc='upper right')
 plt.savefig(f"{PLOT_DIR}/flares.pdf", bbox_inches='tight')
@@ -92,7 +91,7 @@ for g in [200, 400]:
         fig, ax = plt.subplots()
 
         # Off axis luminosity
-        L = log(np.array([[XRT_c * peak_patch_luminosity(nuobs, chi, r, tej + 2 * tau * g ** 2 / beta, 2 * cLight * tau * g ** 2, g, Eiso, nup, a, b)/afterglow(tej + 2 * tau * g ** 2 * (1 / beta - ccm)) for tau in tau_l] for tej in tej_l]))
+        L = log(np.array([[peak_patch_luminosity(nuobs, chi, r, tej + 2 * tau * g ** 2 / beta, 2 * cLight * tau * g ** 2, g, Eiso, nup, a, b)/afterglow(tej + 2 * tau * g ** 2 * (1 / beta - ccm)) for tau in tau_l] for tej in tej_l]))
         CS = ax.contour(tau_l, tej_l, L, 9, colors="k")
         ax.clabel(CS, inline=1, inline_spacing=0, fmt='%1.1f', rightside_up=0, fontsize="smaller", use_clabeltext=1)
         #plt.pcolor(tau_l, tej_l, L, cmap="Greys", norm=Normalize(-3, 3))
@@ -129,12 +128,12 @@ for g in [200, 400]:
         plt.fill_between(tau_l, Y1, Y2, color="red", alpha=0.2)
 
         # On axis luminosity
-        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e49), ymin = -10, ymax = 100, color="green", linestyle=":")
-        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e50), ymin = -10, ymax = 100, color="green", linestyle="--")
-        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e51), ymin = -10, ymax = 100, color="green", label=r"$\log L_{on, BAT}$ = 49, 50, 51, 52, 53")
-        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e52), ymin = -10, ymax = 100, color="green", linestyle="--")
-        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e53), ymin = -10, ymax = 100, color="green", linestyle=":")
-        plt.axvspan(BAT_c * Eiso / (2 * g * nup * 1.e49), BAT_c * Eiso / (2 * g * nup * 1.e53), color="green", alpha=0.2)
+        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e50), ymin = -10, ymax = 100, color="green", linestyle=":")
+        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e51), ymin = -10, ymax = 100, color="green", linestyle="--")
+        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e52), ymin = -10, ymax = 100, color="green", label=r"$\log L_{on, BAT}$ = 49, 50, 51, 52, 53")
+        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e53), ymin = -10, ymax = 100, color="green", linestyle="--")
+        plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e54), ymin = -10, ymax = 100, color="green", linestyle=":")
+        plt.axvspan(BAT_c * Eiso / (2 * g * nup * 1.e50), BAT_c * Eiso / (2 * g * nup * 1.e54), color="green", alpha=0.2)
 
         # Flare points
         for i in range(len(letters)):
@@ -146,7 +145,7 @@ for g in [200, 400]:
         plt.xlim(1.e-3, 100)
         plt.ylabel(r"$t_{ej}$ [s]")
         plt.xlabel(r"$\tau~(= \Delta t_{on})$ [s]")
-        plt.title(r"$\Gamma$ = " + f"{g}, "+ r"$\delta \theta / \theta_v$ = s" + f"{chi/tv:.2f}")
+        plt.title(r"$\Gamma$ = " + f"{g}, "+ r"$\delta \theta / \theta_v$ = " + f"{chi/tv:.2f}")
         if g >= 1000:
             plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='xx-small')
         plt.savefig(f"{PLOT_DIR}/{FILE_NAME}.pdf", bbox_inches='tight')

@@ -102,7 +102,7 @@ def bpl(nu, nup, a, b):
 def simple_hle_patch(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b):
     '''HLE from circular patch centered on chic, radius r'''
     beta = sqrt(1 - 1 / g ** 2)
-    return ((Eiso / 4 * Pi) * (cLight / re) * deltaphi(chic, r, np.arccos((te - t) * cLight / re))
+    return ((Eiso * cLight / (4 * Pi * g * re)) * deltaphi(chic, r, np.arccos((te - t) * cLight / re))
             * bpl(nuobs * g * (1 - beta * cLight * (te - t) / re), nup, a, b)
             / (g * (1 - beta * cLight * (te - t) / re)) ** 2)
 
@@ -110,8 +110,7 @@ def peak_patch_luminosity(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
     '''Approximate peak spectral luminosity of emission from patch'''
     beta = sqrt(1 - 1 / g ** 2)
     if chic - r <0.:
-        return ((Eiso * cLight) / (2 * re)
-                 * bpl(nuobs * g * (1 - beta), nup, a, b)
+        return ((Eiso * cLight / (2 * g * re)) * bpl(nuobs * g * (1 - beta), nup, a, b)
                  / (g * (1 - beta))**2)
     else:
         tm = te - re * cos(max(0., chic - r)) / cLight
@@ -119,12 +118,12 @@ def peak_patch_luminosity(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
         T = 10 ** np.linspace(log(tm), log(tM), 5)
         return np.max([simple_hle_patch(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b) for t in T])
 
-def toy_afterglow(t):
+def toy_afterglow_wind(t):
     '''Toy XRT band afterglow model with ESD, plateau and regular decay'''
-    maxi = 1.e46 / ((30 - 0.3) * keV / hPlanck)
+    maxi = 1.e45 / ((30 - 0.3) * keV / hPlanck)
     if t < 1.e3:
         return maxi * (t/1.e3)**(-3)
-    if t > 1.e5:
-        return maxi * (t/1.e5)**(-1)
+    if t > 1.e6:
+        return maxi * (t/1.e6)**(-1)
     else:
         return maxi
