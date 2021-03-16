@@ -47,11 +47,15 @@ Jy          = (1.0e-23)           # erg/cm2/s/Hz
 mJy         = (1.0e-26)           # erg/cm2/s/Hz
 microJy     = (1.0e-29)           # erg/cm2/s/Hz
 micron      = (1.0e-4)            # cm
+XRT_0 = 0.3 * keV / hPlanck
+XRT_1 = 30. * keV / hPlanck
+BAT_0 = 15. * keV / hPlanck
+BAT_1 = 150. * keV / hPlanck
 XRT_c = (30. - 0.3) * keV / hPlanck
 BAT_c = (150. - 15.) * keV / hPlanck
 cmap = colors.LinearSegmentedColormap.from_list('custom',rainbow(np.linspace(0, 1, 10)))
 ls_l = ['-', ':', '--', '-.']
-
+colors_l = [u'#1f77b4', u'#ff7f0e', u'#2ca02c', u'#d62728', u'#9467bd', u'#8c564b', u'#e377c2', u'#7f7f7f', u'#bcbd22', u'#17becf']
 
 def magAB(F):
     '''AB magnitude from spectral flux. F in erg/s/cm2/Hz'''
@@ -94,19 +98,39 @@ def deltaphi(chic, r, chi):
 
 def bpl(nu, nup, a, b):
     '''Normalized broken-power law function.'''
+    k = 1 / (nup * (1/(a+1) - 1/(b+1)))
     if nu < nup:
-        return (nu/nup) ** a / (nup * (1/(a+1) - 1/(b+1)))
+        return k * (nu/nup) ** a
     else:
-        return (nu/nup) ** b / (nup * (1/(a+1) - 1/(b+1)))
+        return k * (nu/nup) ** b
 
-def simple_hle_patch(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b):
+def ipl(nu, nup, a, b):
+    '''A primitive of bpl, such that \int_x^y bpl = ipl(y) - ipl(x)'''
+    k = 1 / (1 / (a + 1) - 1 / (b + 1))
+    if nu < nup:
+        return k * (nu / nup) ** (a + 1) / (a + 1)
+    else:
+        return k * (1 / (a + 1) + ((nu / nup) ** (b + 1) - 1) / (b + 1))
+
+def simple_hle_patch_spectral(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b):
     '''HLE from circular patch centered on chic, radius r'''
     beta = sqrt(1 - 1 / g ** 2)
-    return ((Eiso * cLight / (4 * Pi * g * re)) * deltaphi(chic, r, np.arccos((te - t) * cLight / re))
-            * bpl(nuobs * g * (1 - beta * cLight * (te - t) / re), nup, a, b)
-            / (g * (1 - beta * cLight * (te - t) / re)) ** 2)
+    alpha = np.arccos((te - t) * cLight / re)
+    doppler = 1 / (g * (1 - beta * cos(alpha)))
+    return ((Eiso * cLight / (4 * Pi * g * re)) * deltaphi(chic, r, alpha)
+            * bpl(nuobs / doppler, nup, a, b)
+            * doppler ** 2)
 
-def peak_patch_luminosity(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
+def simple_hle_patch_band(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b, nu0, nu1):
+    '''HLE from circular patch centered on chic, radius r, integrated on [nu0, nu1]'''
+    beta = sqrt(1 - 1 / g ** 2)
+    alpha = np.arccos((te - t) * cLight / re)
+    doppler = 1 / (g * (1 - beta * cos(alpha)))
+    return ((Eiso * cLight / (4 * Pi * g * re)) * deltaphi(chic, r, alpha)
+            * (ipl(nu1 / doppler, nup, a, b) - ipl(nu0 / doppler, nup, a, b))
+            * doppler ** 3)
+
+def peak_patch_luminosity_spectral(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
     '''Approximate peak spectral luminosity of emission from patch'''
     beta = sqrt(1 - 1 / g ** 2)
     if chic - r <0.:
@@ -115,8 +139,16 @@ def peak_patch_luminosity(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
     else:
         tm = te - re * cos(max(0., chic - r)) / cLight
         tM = te - re * cos(min(Pi, chic + r)) / cLight
-        T = 10 ** np.linspace(log(tm), log(tM), 5)
-        return np.max([simple_hle_patch(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b) for t in T])
+        T = 10 ** np.linspace(log(tm), log(tM), 7)
+        return np.max([simple_hle_patch_spectral(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b) for t in T])
+
+def peak_patch_luminosity_band(nuobs, chic, r, te, re, g, Eiso, nup, a, b, nu0, nu1):
+    '''Approximate peak spectral luminosity of emission from patch'''
+    beta = sqrt(1 - 1 / g ** 2)
+    tm = te - re * cos(max(0., chic - r)) / cLight
+    tM = te - re * cos(min(Pi, chic + r)) / cLight
+    T = 10 ** np.linspace(log(tm), log(tM), 7)
+    return np.max([simple_hle_patch_band(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b, nu0, nu1) for t in T])
 
 def toy_afterglow_wind(t):
     '''Toy XRT band afterglow model with ESD, plateau and regular decay'''
@@ -127,3 +159,6 @@ def toy_afterglow_wind(t):
         return maxi * (t/1.e6)**(-1)
     else:
         return maxi
+
+def toy_esd(t):
+    return 1.e48 * (t/100)**(-3.) / XRT_c

@@ -333,22 +333,6 @@ plt.xlim([50, 10000])
 plt.legend(loc='upper right')
 plt.savefig(f"{PLOT_DIR}/{FILE_NAME}.pdf", bbox_inches='tight')
 
-plt.figure()
-fig = plt.gcf()
-ax = fig.gca()
-plt.gca().set_aspect('equal', adjustable='box')
-ax.add_artist(plt.Circle((0, 0), tj, edgecolor='black', fill=False))
-ax.add_artist(plt.Circle((0, tj / 3), 0.5 / 250, edgecolor='grey', fill=False))
-ax.add_artist(plt.Circle((0, 2 * tj / 3), 0.5 / 125, edgecolor='grey', fill=False))
-
-#plot patches
-for j, ch in enumerate(chis):
-    ax.add_artist(plt.Circle((ch - tv, 0), radiis[j], color=cmap(((ch/tv) - 0.25) / (1.1-0.25))))
-
-plt.scatter([-tv], [0], marker = 'x')
-plt.xlim([-1.1 * tv, tv])
-plt.ylim([-tv, tv])
-plt.savefig(f"{PLOT_DIR}/positions.pdf")
 
 plt.figure()
 plt.plot(T1p, L1_pp, label = "P1", color = cmap((0.25-0.25)/(1.1-0.25)))
