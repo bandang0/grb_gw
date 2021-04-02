@@ -44,6 +44,7 @@ bands_d = ['g', 'r', 'i', 'z']
 mag_lim_d = {'g': 21, 'r': 21, 'i': 21.5}
 cmap_d = {'g': 'Greens', 'r': 'Reds', 'i': 'Greys'}
 c_d = {'g': 'green', 'r': 'red', 'i': 'black', "z": 'blue'}
+ls_d = {'g': '-', 'r': '.-', 'i': ":", 'z': '-- '}
 tex_d = {'g': r'$g$', 'r': r'$r$', 'i': r'$i$', 'z': r'$z$'}
 
 # Constants
@@ -301,7 +302,7 @@ print("Maximum and minimum magnitudes for O4 GW events")
 for f in bands_d:
     print(f"{f}: {gw_O4[f].max():7.5g}, {gw_O4[f].min():7.5g}")
     hist, edges = np.histogram(gw_O4[f], density=True, bins=BINS, range=[12, 27.5])
-    plt.plot(edges[:-1], hist, label=tex_d[f], color=c_d[f])
+    plt.plot(edges[:-1], hist, label=tex_d[f], color=c_d[f], linestyle=ls_d[f])
 plt.xlim(28, 14)
 plt.ylim(0)
 plt.xlabel("AB magnitude")
@@ -356,7 +357,7 @@ for mag_lim in [21, 20, 19, 18]:
     a = np.percentile(tmp.tv, 5) / Deg
     m = np.percentile(tmp.tv, 50) / Deg
     b = np.percentile(tmp.tv, 95) / Deg
-    plt.plot(edges[:-1], hist, label=r"$r <$" + f" {mag_lim}", color=c)
+    plt.plot(edges[:-1], hist, label=r"$r <$" + f" {mag_lim}", color=c, linestyle=ls_l[mag_lim % 4])
     plt.vlines(m, ymin = 0, ymax=lsub(m, edges, hist), color=c, linestyle="--", linewidth=thin)
 
 plt.axvspan(0, 0.1 / Deg, color="grey", alpha=0.5)
@@ -387,7 +388,7 @@ for mag_lim in [21, 20, 19, 18]:
     hist2, edges2 = np.histogram(tmp2.tv / Deg, bins=BINS)
     m = np.percentile(tmp2.tv, 50) / Deg
     plt.plot(edges[:-1], hist, color=c, linestyle=":")
-    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle="-")
+    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle=ls_l[mag_lim % 4])
     plt.vlines(m, ymin = 0, ymax=lsub(m, edges2, hist2), color=c, linestyle="--", linewidth=thin)
     print(f"  r_lim = {mag_lim}: ( > vlas) = {100 * len(tmp3) / len(tmp):4.2g}%, (> 3 x vlas) = {100 * len(tmp2) / len(tmp):4.2g}%")
     print(f"  r_lim = {mag_lim}: ( > vlas) = {10 * len(tmp3) / N_O4:4.2g},  (> 3 x vlas) = {10 * len(tmp2) / N_O4:4.2g}")
