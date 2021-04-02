@@ -44,7 +44,7 @@ bands_d = ['g', 'r', 'i', 'z']
 mag_lim_d = {'g': 21, 'r': 21, 'i': 21.5}
 cmap_d = {'g': 'Greens', 'r': 'Reds', 'i': 'Greys'}
 c_d = {'g': 'green', 'r': 'red', 'i': 'black', "z": 'blue'}
-ls_d = {'g': '-', 'r': '.-', 'i': ":", 'z': '-- '}
+ls_d = {'g': '-', 'r': '-.', 'i': ":", 'z': '--'}
 tex_d = {'g': r'$g$', 'r': r'$r$', 'i': r'$i$', 'z': r'$z$'}
 
 # Constants
@@ -388,7 +388,7 @@ for mag_lim in [21, 20, 19, 18]:
     hist2, edges2 = np.histogram(tmp2.tv / Deg, bins=BINS)
     m = np.percentile(tmp2.tv, 50) / Deg
     plt.plot(edges[:-1], hist, color=c, linestyle=":")
-    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle=ls_l[mag_lim % 4])
+    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle=ls_l[(2 + mag_lim) % 4])
     plt.vlines(m, ymin = 0, ymax=lsub(m, edges2, hist2), color=c, linestyle="--", linewidth=thin)
     print(f"  r_lim = {mag_lim}: ( > vlas) = {100 * len(tmp3) / len(tmp):4.2g}%, (> 3 x vlas) = {100 * len(tmp2) / len(tmp):4.2g}%")
     print(f"  r_lim = {mag_lim}: ( > vlas) = {10 * len(tmp3) / N_O4:4.2g},  (> 3 x vlas) = {10 * len(tmp2) / N_O4:4.2g}")
@@ -419,7 +419,7 @@ for mag_lim in [21, 20, 19, 18]:
     hist2, edges2 = np.histogram(tmp2.tv / Deg, bins=BINS)
     m = np.percentile(tmp2.tv, 50) / Deg
     plt.plot(edges[:-1], hist, color=c, linestyle="--")
-    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle="-")
+    plt.plot(edges2[:-1], hist2, label=r"$r <$" + f" {mag_lim}", color=c, linestyle=ls_l[(2 + mag_lim) % 4])
     plt.vlines(m, ymin = 0, ymax=lsub(m, edges2, hist2), color=c, linestyle="--", linewidth=thin)
     print(f"  r_lim = {mag_lim}: ( > vlas) = {100 * len(tmp3) / len(tmp):4.2g}%, (> 3 x vlas) = {100 * len(tmp2) / len(tmp):4.2g}%")
     print(f"  r_lim = {mag_lim}: ( > vlas) = {10 * len(tmp3) / N_O4:4.2g},  (> 3 x vlas) = {10 * len(tmp2) / N_O4:4.2g}")
