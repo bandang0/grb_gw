@@ -357,7 +357,7 @@ for mag_lim in [21, 20, 19, 18]:
     a = np.percentile(tmp.tv, 5) / Deg
     m = np.percentile(tmp.tv, 50) / Deg
     b = np.percentile(tmp.tv, 95) / Deg
-    plt.plot(edges[:-1], hist, label=r"$r <$" + f" {mag_lim}", color=c, linestyle=ls_l[mag_lim % 4])
+    plt.plot(edges[:-1], hist, label=r"$r <$" + f" {mag_lim}", color=c, linestyle=ls_l[(2+mag_lim) % 4])
     plt.vlines(m, ymin = 0, ymax=lsub(m, edges, hist), color=c, linestyle="--", linewidth=thin)
 
 plt.axvspan(0, 0.1 / Deg, color="grey", alpha=0.5)
