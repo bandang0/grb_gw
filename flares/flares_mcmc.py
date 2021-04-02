@@ -12,7 +12,7 @@ from multiprocessing import Pool
 case = argv[1]
 
 a = -0.5
-b = -2.0
+b = -2
 Ep = 1. * keV
 nup = Ep / hPlanck
 nuobs = 5.0 * keV / hPlanck
@@ -53,6 +53,11 @@ if case == '050915A':
     t0 = 0
 if case == '050820A':
     t1 = 8.e3
+if case == '100619A':
+    t0 = 270
+    t1 = 1.e5
+if case == '081102':
+    t0 = 300
 xrt_df = pd.read_csv(f"data/{case}.xrt", sep=" ", names=['t', 't_', 't__', 'f', 'ef', 'ef_'])
 
 xrt_df = xrt_df.sort_values('t')
@@ -88,11 +93,14 @@ plt.plot(tobs_l, L_flare, color='black', label='HLE flare')
 plt.plot(tobs_l, L_pl + L_flare, color='blue', label='Total')
 plt.xscale('log')
 plt.yscale('log')
-plt.text(np.min(xrt_df['t']), np.min(xrt_df['liso']), r"$\chi$ = " + f"{chic_}\n"\
-                                                + r"$N$ = " + f"{n_}\n"\
-                                                + r"$t_{ej}$ = " + f"{tej_} s\n"\
-                                                + r"$\tau$ = " + f"{tau_} s\n"\
-                                                + r"$\Gamma$ = " + f"{g_}")
+plt.text(np.min(xrt_df['t']), np.min(xrt_df['liso']),
+         r"$E_{\rm iso}$ = " + f"{10 ** le_:.1e}\n"\
+        + r"$\Gamma$ = " + f"{g_:.3g}\n"
+        + r"$N$ = " + f"{n_:.3g}\n"\
+        + r"$\theta_i$ = " + f"{chic_ - 0.5 * n_ / g_:.3g}\n"\
+        + r"$t_{ej}$ = " + f"{tej_:.3g} s\n"\
+        + r"$\tau$ = " + f"{tau_:.3g} s\n"\
+                                                )
 plt.xlabel('Time since burst [s]')
 plt.ylabel('XRT-integrated luminosity [erg/s]')
 if t0 != 0:

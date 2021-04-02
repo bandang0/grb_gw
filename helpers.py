@@ -130,6 +130,14 @@ def simple_hle_patch_band(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b, nu0, nu
             * (ipl(nu1 / doppler, nup, a, b) - ipl(nu0 / doppler, nup, a, b))
             * doppler ** 3)
 
+def simple_hle_patch_band_zero(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b, nu0, nu1):
+    tm = te - re * cos(max(0., chic - r)) / cLight
+    tM = te - re * cos(min(Pi, chic + r)) / cLight
+    if t < tm or t > tM:
+        return 0
+    else:
+        return simple_hle_patch_band(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b, nu0, nu1)
+
 def peak_patch_luminosity_spectral(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
     '''Approximate peak spectral luminosity of emission from patch'''
     beta = sqrt(1 - 1 / g ** 2)
@@ -143,7 +151,7 @@ def peak_patch_luminosity_spectral(nuobs, chic, r, te, re, g, Eiso, nup, a, b):
         return np.max([simple_hle_patch_spectral(t, nuobs, chic, r, te, re, g, Eiso, nup, a, b) for t in T])
 
 def peak_patch_luminosity_band(nuobs, chic, r, te, re, g, Eiso, nup, a, b, nu0, nu1):
-    '''Approximate peak spectral luminosity of emission from patch'''
+    '''Approximate peak band luminosity of emission from patch'''
     beta = sqrt(1 - 1 / g ** 2)
     tm = te - re * cos(max(0., chic - r)) / cLight
     tM = te - re * cos(min(Pi, chic + r)) / cLight
