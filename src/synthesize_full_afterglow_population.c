@@ -14,13 +14,14 @@ int main(int argc, char ** argv){
   double r_dec, r_nr, miso, omega, dr0, inc_r;
 
   /* Physical data */
-  double r, dr, last_r;
-  int n_step, n_run;
+  double r, dr, last_r, pr;
+  int n_step, n_run, pn;
+  int ig, iv;
   double t_obs, pt;
   double t;
   double texz;
   double Niso, nz;
-  double b;
+  double b, pb;
   double rho_s;
   double eps_s;
   double beta;
@@ -33,7 +34,7 @@ int main(int argc, char ** argv){
   double dopp, pdopp;
 
   /* Distributions */
-  int n_pop = 100000;
+  int n_pop = 200000;
   double ran;
   //G16
   double p1 = 0.53;
@@ -56,12 +57,12 @@ int main(int argc, char ** argv){
   p = 2.2;
   tj = 0.1;
   nu_obs = 3.0e9;
-  n = 1.0e+0;
+  d_max = atoi(argv[1]) * Mpc;
 
   for (n_run = 1; n_run < n_pop; n_run++){
     /* Generate random jet parameters */
     tv = acos(rd());
-    d = d_max * pow( rd(), 1. / 3) * Mpc;
+    d = d_max * pow( rd(), 1. / 3);
     ran = rd();
     if (ran < fstar){
        eiso = e0_min
@@ -72,6 +73,7 @@ int main(int argc, char ** argv){
       * pow(1 - ((ran-fstar)/(1-fstar))*(1-pow(e0_max/e0_star, 1-p2)), 1/(1-p2));
     }
     epsilon_b = pow(10., randn(-3, 0.75));
+    n = pow(10., randn(-3, 0.75));
 
     /* Global variables */
     r_dec = pow(3 * eiso
@@ -79,8 +81,8 @@ int main(int argc, char ** argv){
     omega = 2 * PI * (1 - cos(tj));
 
     /* Spatial steps */
-    dr0 = r_dec / 2048;
-    inc_r = pow(2048, 1. / 4096);
+    dr0 = r_dec / 4096;
+    inc_r = pow(4096, 1. / 4096);
 
     /* Initial conditions */
     max_f_nu_obs = 0.0;
@@ -149,12 +151,28 @@ int main(int argc, char ** argv){
         pnu_i = nu_i;
         pnu_c = nu_c;
         pg = gam;
+        pb = b;
         pdopp = dopp;
+        pr = r;
+        pn = n_step;
       }
       n_step = n_step + 1;
     }
-    fprintf(stdout, "%e %e %e %e %e %e %e %e\n",
-        d / Mpc, n, eiso, epsilon_b,
-        tv, tj, pt / day, pf / microJy);
+    if (pf > 15. * microJy){
+      iv = 1;
+    }
+    else {
+      iv = 0;
+    }
+
+    if (d / d_max < sqrt((1 + 6 * pow(cos(tv), 2) + pow(cos(tv), 4)) / 8)){
+      ig = 1;
+    }
+    else {
+      ig = 0;
+    }
+    fprintf(stdout, "%d %d %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %d\n",
+        ig, iv, d / Mpc, n, eiso, epsilon_b,
+        tv, pt / day, pf / microJy, pnu_a * pdopp, pnu_i * pdopp, pnu_c * pdopp, pg, pb, pdopp, pr, pn);
   }
 }

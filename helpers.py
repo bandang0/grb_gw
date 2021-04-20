@@ -47,12 +47,15 @@ Jy          = (1.0e-23)           # erg/cm2/s/Hz
 mJy         = (1.0e-26)           # erg/cm2/s/Hz
 microJy     = (1.0e-29)           # erg/cm2/s/Hz
 micron      = (1.0e-4)            # cm
+GHz         = (1.e9)              # s^{-1}  
 XRT_0 = 0.3 * keV / hPlanck
 XRT_1 = 30. * keV / hPlanck
 BAT_0 = 15. * keV / hPlanck
 BAT_1 = 150. * keV / hPlanck
 XRT_c = (30. - 0.3) * keV / hPlanck
 BAT_c = (150. - 15.) * keV / hPlanck
+
+
 cmap = colors.LinearSegmentedColormap.from_list('custom',rainbow(np.linspace(0, 1, 10)))
 ls_l = ['-', ':', '--', '-.']
 colors_l = [u'#1f77b4', u'#ff7f0e', u'#2ca02c', u'#d62728', u'#9467bd', u'#8c564b', u'#e377c2', u'#7f7f7f', u'#bcbd22', u'#17becf']

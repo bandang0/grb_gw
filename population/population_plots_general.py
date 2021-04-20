@@ -1,190 +1,302 @@
-'''Plot the histogram of distances.'''
+'N''''Plot the histogram of distances.'''
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from numpy import log10 as log
-DATA_FILE = "general_sample.data"
-PLOT_DIR = "plots/general_sample"
-BINS = 25
+from sys import argv
+from helpers import *
+
+case = argv[1]
+DATA_FILE = f"data/full_ag_{case}.data"
+PLOT_DIR = f"plots/full_ag_{case}"
+BINS = 300
+p=2.2
+ee = 0.1
+
 # Read event data and create pandas data frame.
 all_events = pd.read_csv(DATA_FILE, sep=" ",
-        names=['d', 'n', 'e0', 'eb', 'tv', 'tj', 'pt', 'pf', 'ba',
-        'ig', 'iv', 'is', 'in'])
+        names=['ig', 'iv', 'd', 'n', 'e', 'eb',
+               'tv', 'pt', 'pf', 'pa', 'pi', 'pc', 'pg', 'pb', 'pd', 'pr', 'pn'])
+
+all_events['yy'] = ee * (all_events['pi'] / all_events['pc']) ** (0.1) / (0.8 * all_events['eb'])
+
+all_events['y'] = 0.5 * (sqrt(4 * all_events['yy']+1)-1)
+
+
 
 # Collect event data according to detections in GW, AG, etc.
 gw_vla = all_events.loc[all_events['ig'] * all_events['iv'] == 1]
 vla = all_events.loc[all_events['iv'] == 1]
 gw = all_events.loc[all_events['ig'] == 1]
 
+print(f"Maximum nu_i: {gw_vla['pi'].max() / GHz} GHz")
+print(f"Average log-Compton: {log(gw_vla['y']).mean()}, 95%: {np.percentile(log(gw_vla['y']), 95)}")
+print(f"Minimum peak index: {gw_vla['pn'].min()}")
+
 print("Peak times (cumulative).")
 plt.figure()
 plt.hist([log(vla['pt']), log(gw['pt']), log(all_events['pt'])],
-    label=['Detection Time (AG counterpart to GW)', 'Peak Time (all GW)',
+    label=['Peak Time (AG counterpart to GW)', 'Peak Time (all GW)',
     'Peak Time (all events)'], cumulative=True, histtype='step', bins=BINS)
-plt.xlabel("log(time/days)")
-plt.ylabel("#")
+plt.xlabel(r"$\log( T_p/{\rm days})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/times.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/pt.pdf", bbox_inches='tight')
 
 print("Peak times (cumulative), counterpart only.")
 plt.figure()
-plt.hist(log(vla['pt']), label='Detection Time (AG counterpart to GW)',
+plt.hist(log(vla['pt']), label='Peak Time (AG counterpart to GW)',
     cumulative=True, histtype='step', bins=BINS)
-plt.xlabel("log(time/days)")
-plt.ylabel("#")
+plt.xlabel(r"$\log( T_p/{\rm days})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/timescp.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/ptcp.pdf", bbox_inches='tight')
 
 print("Peak times.")
 plt.figure()
 plt.hist([log(vla['pt']), log(gw['pt']), log(all_events['pt'])],
-        label=['Detection Time (AG counterpart to GW)', 'Peak Time (all GW)',
+        label=['Peak Time (AG counterpart to GW)', 'Peak Time (all GW)',
         'Peak Time (all events)'], histtype='step', bins=BINS)
-plt.xlabel("log(time/days)")
-plt.ylabel("#")
+plt.xlabel(r"$\log( T_p/{\rm days})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dtimes.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dpt.pdf", bbox_inches='tight')
 
 print("Peak times, counterpart only.")
 plt.figure()
-plt.hist(log(vla['pt']), label='Detection Time (AG counterpart to GW)',
+plt.hist(log(vla['pt']), label='Peak Time (AG counterpart to GW)',
     histtype='step', bins=BINS)
-plt.xlabel("log(time/days)")
-plt.ylabel("#")
+plt.xlabel(r"$\log( T_p/{\rm days})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dtimescp.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dptcp.pdf", bbox_inches='tight')
 
-print("Peak betas.")
+print("Peak gammas.")
 plt.figure()
-plt.hist([vla['ba'], gw['ba'], all_events['ba']],
-        label=['Peak apparent beta(AG counterpart to GW)', 'Peak apparent beta (all GW)',
-        'Peak apparent beta (all events)'], histtype='step', bins=BINS)
-plt.xlabel("beta_app")
-plt.ylabel("#")
+plt.hist([vla['pg'], gw['pg'], all_events['pg']],
+        label=['Peak gamma (AG counterpart to GW)', 'Peak gamma (all GW)',
+        'Peak gamma (all events)'], histtype='step', bins=BINS)
+plt.xlabel("$\Gamma$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dba.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dpg.pdf", bbox_inches='tight')
 
-print("Peak betas (AG only).")
+print("Peak gammas (AG only).")
 plt.figure()
-plt.hist([gw_vla['ba']],
-        label=['Peak apparent beta(AG counterpart to GW)'],
+plt.hist([gw_vla['pg']],
+        label=['Peak gamma (AG counterpart to GW)'],
         histtype='step', bins=BINS)
-plt.xlabel("beta_app")
-plt.ylabel("#")
+plt.xlabel("$\Gamma$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dbacp.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dpgcp.pdf", bbox_inches='tight')
 
 print("Peak fluxes (cumulative).")
 plt.figure()
-plt.hist([log(gw_vla['pf']), log(gw['pf']), log(all_events['pt'])],
+plt.hist([log(gw_vla['pf']), log(gw['pf']), log(all_events['pf'])],
         label=['(AG counterpart to GW)', '(all GW)', '(all mergers)'],
         cumulative=True, histtype='step', bins=BINS)
-plt.xlabel("log(Peak Flux/muJy)")
-plt.ylabel("#")
+plt.xlabel(r"$\log(F_p/\mu {\rm Jy})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/fluxes.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/f.pdf", bbox_inches='tight')
 
 print("Peak fluxes (cumulative), GW events only.")
 plt.figure()
 plt.hist(log(gw['pf']), label='(all GW)',
         cumulative=True, histtype='step', bins=BINS)
-plt.xlabel("log(Peak Flux/muJy)")
-plt.ylabel("#")
+plt.xlabel(r"$\log(F_p/\mu {\rm Jy})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/fluxesgw.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/fgw.pdf", bbox_inches='tight')
 
 print("Peak fluxes.")
 plt.figure()
-plt.hist([log(gw_vla['pf']), log(gw['pf']), log(all_events['pt'])],
+plt.hist([log(gw_vla['pf']), log(gw['pf']), log(all_events['pf'])],
         label=['(AG counterpart to GW)', '(all GW)', '(all mergers)'],
         histtype='step', bins=BINS)
-plt.xlabel("log(Peak Flux/muJy)")
-plt.ylabel("#")
+plt.xlabel(r"$\log(F_p/\mu {\rm Jy})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dfluxes.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dpf.pdf", bbox_inches='tight')
+
+print("Peak frequencies.")
+plt.figure()
+plt.hist([log(gw_vla['pa'] / GHz), log(gw_vla['pi'] / GHz), log(hPlanck * gw_vla['pc'] / keV)],
+        label=['absorption', 'injection', 'cooling'],
+        histtype='step', bins=BINS)
+plt.xlabel(r"$\log (\nu_{a, i}/{\rm GHz}), \log (\nu_c / {\rm keV})$")
+plt.ylabel('N')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/df.pdf", bbox_inches='tight')
 
 print("Energy.")
 plt.figure()
-plt.hist([log(gw_vla['e0']), log(gw['e0']), log(all_events['e0'])],
+plt.hist([log(gw_vla['e']), log(gw['e']), log(all_events['e'])],
         label=['(AG counterpart to GW)', '(all GW)', '(all mergers)'],
         histtype='step', bins=BINS)
-plt.xlabel("E_0/erg")
-plt.ylabel("#")
+plt.xlabel(r"$\log E_{\rm iso}/{\rm erg}$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/de0.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/de.pdf", bbox_inches='tight')
 
 print("Energy, counterpart only.")
 plt.figure()
-plt.hist(log(gw_vla['e0']), label='Energy (AG counterpart to GW)',
+plt.hist(log(gw_vla['e']),
     histtype='step', bins=BINS)
-plt.xlabel("log(E_0/erg)")
-plt.ylabel("#")
-plt.legend()
-plt.savefig(f"{PLOT_DIR}/de0cp.png", bbox_inches='tight')
+plt.xlabel(r"$\log E_{\rm iso}/{\rm erg}$")
+plt.ylabel('N')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/decp.pdf", bbox_inches='tight')
 
 print("Distance (Cumulative).")
 plt.figure()
 plt.hist([vla['d'], gw_vla['d'], gw['d'], all_events['d']],
         label=['vla', '(AG counterpart to GW)', '(all GW)', '(all mergers)'],
         cumulative=True, histtype='step', bins=BINS)
-plt.xlabel("Distance/Mpc")
-plt.ylabel("#")
+plt.xlabel(r"$D /{\rm Mpc}$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/distances.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/d.pdf", bbox_inches='tight')
 
 print("Distance.")
 plt.figure()
 plt.hist([gw_vla['d'], gw['d'], all_events['d']],
         label=['(AG counterpart to GW)', '(all GW)', '(all mergers)'],
         histtype='step', bins=BINS)
-plt.xlabel("Distance/Mpc")
-plt.ylabel("#")
+plt.xlabel(r"$D/{\rm Mpc}$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/ddistances.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dd.pdf", bbox_inches='tight')
 
 print("Distance, counterpart only.")
 plt.figure()
-plt.hist(gw_vla['d'], label='(AG counterpart to GW)', histtype='step', bins=BINS)
-plt.xlabel("Distance/Mpc")
-plt.ylabel("#")
+plt.hist(gw_vla['d'], histtype='step', bins=BINS)
+plt.xlabel(r"$D/{\rm Mpc}$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/ddistancescp.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/ddcp.pdf", bbox_inches='tight')
 
 print("Density.")
 plt.figure()
 plt.hist([log(gw_vla['n']), log(gw['n']), log(all_events['n'])],
         label=['(AG counterpart to GW)', '(all GW)', '(all mergers)'],
         histtype='step', bins=BINS)
-plt.xlabel("log(n/cm-3)")
-plt.ylabel("#")
+plt.xlabel(r"$\log( n/{\rm cm}^{-3})$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dn.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dn.pdf", bbox_inches='tight')
 
 print("Density, counterpart only.")
 plt.figure()
-plt.hist(log(gw_vla['n']), label='(AG counterpart to GW)',
+plt.hist(log(gw_vla['n']),
         histtype='step', bins=BINS)
-plt.xlabel("log(n/cm-3)")
-plt.ylabel("#")
-plt.legend()
-plt.savefig(f"{PLOT_DIR}/dncp.png", bbox_inches='tight')
+plt.xlabel(r"$\log( n/{\rm cm}^{-3})$")
+plt.ylabel('N')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dncp.pdf", bbox_inches='tight')
 
 print("Viewing angle.")
 plt.figure()
-plt.hist([gw_vla['tv'], gw['tv'], all_events['tv']],
+plt.hist([gw_vla['tv'] / Deg, gw['tv'] / Deg, all_events['tv'] / Deg],
         label=['(AG counterpart to GW)', '(all GW)', '(all mergers)'],
         histtype='step', bins=BINS)
-plt.xlabel("tv/rad")
-plt.ylabel("#")
+plt.xlabel(r"$\theta_v/{\rm deg}$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dtv.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dtv.pdf", bbox_inches='tight')
 
 print("Viewing angle, counterpart only.")
 plt.figure()
-plt.hist(gw_vla['tv'], label='(AG counterpart to GW)', histtype='step', bins=BINS)
-plt.xlabel("tv/rad")
-plt.ylabel("#")
+plt.hist(gw_vla['tv'] / Deg, label='(AG counterpart to GW)', histtype='step', bins=BINS)
+plt.xlabel(r"$\theta_v/{\rm deg}$")
+plt.ylabel('N')
 plt.legend()
-plt.savefig(f"{PLOT_DIR}/dtvcp.png", bbox_inches='tight')
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dtvcp.pdf", bbox_inches='tight')
 
+print("Viewing angle times gamma")
+plt.figure()
+plt.hist(gw_vla['tv'] * gw_vla['pg'], label=r'$\theta_v \times \Gamma$', histtype='step', bins=BINS)
+plt.xlabel(r"$\theta_v \times \Gamma$")
+plt.ylabel('N')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dtvpg.pdf", bbox_inches='tight')
+print("Done.")
+
+print("Radius reached by jet")
+plt.figure()
+plt.hist(log(gw_vla['pr'] / pc), histtype='step', bins=BINS)
+plt.xlabel(r"$\log R_{\rm max}$/ pc")
+plt.ylabel('N')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dr.pdf", bbox_inches='tight')
+print("Done.")
+
+print("Index of peak flux")
+plt.figure()
+plt.hist(gw_vla['pn'], histtype='step', bins=BINS)
+plt.xlabel("$n_p$")
+plt.ylabel('N')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dnp.pdf", bbox_inches='tight')
+print("Done.")
+
+print("Injection vs. viewing angle")
+plt.figure()
+plt.hist2d(log(gw_vla['pi'] / GHz), gw_vla['tv'] / Deg, bins=100)
+plt.xlabel(r"$\log \nu_i / {\rm GHz}$")
+plt.ylabel(r'$\theta_v$ / deg')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dnuidtv.pdf", bbox_inches='tight')
+print("Done.")
+
+print("Viewing angle vs. gamma")
+plt.figure()
+plt.hist2d(gw_vla['tv'] / Deg, gw_vla['pg'], bins=100)
+plt.xlabel(r"$\theta_v$ / deg")
+plt.ylabel(r'$\Gamma$')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dtvdg.pdf", bbox_inches='tight')
+print("Done.")
+
+print('Compton Y')
+plt.figure()
+plt.hist(log(gw_vla['y']), histtype='step', bins=BINS)
+plt.xlabel("$Y_c$")
+plt.ylabel('N')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dy.pdf", bbox_inches='tight')
+print("Done.")
+
+print("Viewing angle vs. Peak time")
+plt.figure()
+plt.hist2d(gw_vla['tv'] / Deg, log(gw_vla['pt']), bins=50)
+plt.xlabel(r"$\theta_v / {\rm deg}$")
+plt.ylabel(r'$\log T_p$ / day')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dtvdpt.pdf", bbox_inches='tight')
 print("Done.")

@@ -60,12 +60,12 @@ plateau_ism = lambda x: 6.6e45
 #     plateau_level = 6.6e45
 
 # Flares to plot
-letters = ['A', 'C', 'D', 'G', 'H', 'I', 'K']
-taus = {'A': 1, 'B': 1, 'C' : 30, 'D': 10., 'E': 2, 'F': 9, 'G': 10, 'H': 3., 'I': 1, 'J': 10, 'K': 10}
-tejs = {'A': 50, 'B': 50, 'C': 60, 'D': 0., 'E': 50, 'F': 80, 'G': 50, 'H': 80, 'I': 40, 'J': 60, 'K': 80}
-gammas = {'A': 100, 'B': 50, 'C': 200, 'D': 100, 'E': 100, 'F': 200, 'G': 100, 'H': 100, 'I': 200, 'J': 250, 'K': 200}
-tis =  {'A': .03, 'B': .08, 'C': .03, 'D': .03, 'E': .03, 'F': .03, 'G': .03, 'H': 0.03, 'I': 0.03, 'J': 0.02, 'K': 0.03}
-sizes = {'A': 9, 'B': 6, 'C': 6, 'D': 3, 'E': 5, 'F': 9, 'G': 3, 'H': 3, 'I': 3, 'J': 3, 'K': 3}
+letters = ['A', 'C', 'D', 'E', 'G', 'I', 'J', 'X']
+taus = {'A': 1, 'B': 1, 'C' : 30, 'D': 1., 'E': 4., 'F': 9, 'G': 10, 'H': 4., 'I': 3, 'J': 8, 'K': 5, 'X': 1}
+tejs = {'A': 80, 'B': 50, 'C': 60, 'D': 50, 'E': 50, 'F': 80, 'G': 0, 'H': 80, 'I': 40, 'J': 40, 'K': 20., 'X': 150}
+gammas = {'A': 100, 'B': 50, 'C': 200, 'D': 100, 'E': 100, 'F': 200, 'G': 100, 'H': 100, 'I': 200, 'J': 200, 'K': 100, 'X':200}
+tis =  {'A': .03, 'B': .08, 'C': .03, 'D': .03, 'E': .03, 'F': .03, 'G': .03, 'H': 0.03, 'I': 0.03, 'J': 0.03, 'K': 0.03, 'X': 0.03}
+sizes = {'A': 3, 'B': 6, 'C': 6, 'D': 3, 'E': 3, 'F': 9, 'G': 3, 'H': 3, 'I': 3, 'J': 3, 'K': 3, 'X': 3}
 
 print("Plotting flares over afterglow")
 tej_los = 30
@@ -104,6 +104,9 @@ for i, letter in enumerate(letters):
     tM = te - re * cos(min(Pi, chi + r)) / cLight
     T_patch = 10 ** np.linspace(log(tm), log(tM), 2000)
     L_patch = np.array([simple_hle_patch_band(t, nuobs, chi, r, te, re, Gamma, Eiso, nup, a, b, XRT_0, XRT_1) for t in T_patch])
+    max_l = L_patch.max()
+    ratio_wind = max_l / (simple_hle_patch_band_zero(tm, nuobs, chi_los, r_los, te_los, re_los, g_los, Eiso_los, nup, a, b, XRT_0, XRT_1))
+    ratio_ism = max_l / ( simple_hle_patch_band_zero(tm, nuobs, chi_los, r_los, te_los, re_los, g_los, Eiso_los, nup, a, b, XRT_0, XRT_1))
     t_above_wind = [T_patch[j] for j in range(len(T_patch)) if L_patch[j] >  (plateau_wind(T_patch[j]) + simple_hle_patch_band_zero(T_patch[j], nuobs, chi_los, r_los, te_los, re_los, g_los, Eiso_los, nup, a, b, XRT_0, XRT_1))]
     t_above_ism = [T_patch[j] for j in range(len(T_patch)) if L_patch[j] >  (plateau_ism(T_patch[j]) + simple_hle_patch_band_zero(T_patch[j], nuobs, chi_los, r_los, te_los, re_los, g_los, Eiso_los, nup, a, b, XRT_0, XRT_1))]
     eta_t = (tM - tm) / tm
@@ -123,7 +126,7 @@ for i, letter in enumerate(letters):
 
     plt.plot(T_patch, L_patch, linestyle=ls_l[i % 4], color=colors_l[i % 10], label=f"{letter}")
 
-    print(f"{letter} & {Gamma:3d} & {sizes[letter]:3d} & {tis[letter] / tv:3.2f} & {tau:5.1f} & {int(t_delay):3d} & {int(S):4d} & {re:3.1e} & {eta_t:3.2f} & {eta_p:3.2f} & {eta_o_wind:3.2f} & {eta_o_ism:3.2f} & {L_on:3.1e} \\\\")
+    print(f"{letter} & {Gamma:3d} & {sizes[letter]:3d} & {tau:5.1f} & {int(t_delay):3d} & {int(S):4d} & {re:3.1e} & {eta_t:3.2f} & {eta_p:3.2f} & {eta_o_wind:3.2f} & {eta_o_ism:3.2f} & {ratio_wind:3.2f} & {L_on:3.1e} \\\\")
 
 plt.ylabel(f"Luminosity [0.3-30] keV (erg/s)")
 plt.xlabel("Time (s)")
@@ -135,6 +138,7 @@ plt.legend(loc='upper right')
 plt.savefig(f"{PLOT_DIR}/both_flares.pdf", bbox_inches='tight')
 
 #plot patches
+print("Plotting patch positions")
 plt.figure()
 fig = plt.gcf()
 ax = fig.gca()
@@ -171,7 +175,7 @@ for case in ['wind', 'ism']:
 
             # Off axis luminosity
             L = log(np.array([[peak_patch_luminosity_band(nuobs, chi, r, tej + 2 * tau * g ** 2 / beta, 2 * cLight * tau * g ** 2, g, Eiso, nup, a, b, XRT_0, XRT_1)/afterglow_band(tej + 2 * tau * g ** 2 * (1 / beta - ccm)) for tau in tau_l] for tej in tej_l]))
-            CS = ax.contour(tau_l, tej_l, L, 13, colors="red")
+            CS = ax.contour(tau_l, tej_l, L, 25, colors="red")
             ax.clabel(CS, inline=1, inline_spacing=0, fmt='%1.1f', rightside_up=0, fontsize="smaller", use_clabeltext=1)
             #plt.pcolor(tau_l, tej_l, L, cmap="Greys", norm=Normalize(-3, 3))
             #plt.colorbar(label="$\log L_{off}$ / AG")
