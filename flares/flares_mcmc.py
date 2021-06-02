@@ -68,8 +68,16 @@ with open(f"data/{case}.bestt90", 'r') as conf_file:
 if case == '050607':
     t0 = 200
     t1 = 2.e4
+if case == '050406':
+    z = 2.44
+    t90 = 6.0
+    dt90 = 1.5
 if case == '050724':
     t0 = 4.e2
+if case == '050713A':
+    t90 = 124.7
+    dt90 = 62.2
+    t1 = 158
 if case == '050820A':
     t1 = 8.e3
 if case == '050915A':
@@ -85,10 +93,16 @@ if case == '060204B':
     z = 2.3393
     Eiso_p = 3.7e52
 if case == '060413':
-    t0 = 200
     t1 = 2.e4
     t90 = 147.7
     dt90 = 26.8
+if case == '060719':
+    t1 = 1000
+    t90 = 66.9
+    dt90 = 11.5
+    z = 1.532
+    t90_rf = t90 / (1 + z)
+    dt90_rf = dt90 / (1 + z)
 if case == '070704':
     t0 = 0
     t90 = 384.2
@@ -109,6 +123,13 @@ if case == '100619A':
     t1 = 1.e5
     t90 = 97.5
     dt90 = 1.5
+if case == '100816A':
+    t1 = 1.e3
+    z = 0.8034
+    t90 = 2.8
+    dt90 = 0.6
+    t90_rf = t90 / (1 + z)
+    dt90_rf = dt90 / (1 + z)
 if case == '110801A':
     t0 = 250
     t1 = 2.e3
@@ -131,10 +152,11 @@ ldl = log(cosmo.luminosity_distance(z).value * Mpc)
 xrt_df = pd.read_csv(f"data/{case}.xrt", sep=" ", names=['t', 't_', 't__', 'f', 'ef', 'ef_'])
 
 xrt_df = xrt_df.sort_values('t')
-xrt_df['liso'] = 4 * Pi * (10 ** ldl) ** 2 * xrt_df['f']
-xrt_df['lisoe'] = 4 * Pi * (10 ** ldl) ** 2 * np.abs(xrt_df['ef'])
+xrt_df['liso'] = 4 * Pi * (10 ** ldl) ** 2 * xrt_df['f'] / (1 + z)
+xrt_df['lisoe'] = 4 * Pi * (10 ** ldl) ** 2 * np.abs(xrt_df['ef']) / (1 + z)
 xrt_df['llisoe'] = log(xrt_df['liso'] + xrt_df['lisoe']) - log(xrt_df['liso'])
 xrt_df['lliso'] = log(xrt_df['liso'])
+xrt_df['t'] = xrt_df['t'] / (1 + z)
 
 times = list(xrt_df['t'])
 fluxes = list(xrt_df['lliso'])
@@ -181,22 +203,23 @@ def lnprob(theta):
     "Simply Bayes theorem"
     s1, s2, lts, lls, le, ti, n, tej, tau, g = theta
     #s1, s2, lts, lls, ti = theta
-    if t90_mode and tej > (t90 + dt90):
+    if t90_mode and tej > (t90_rf + dt90_rf):
         return -np.inf
     if s1 < -11 or s1 > 0 \
-    or s2 < -3 or s2 > 1 \
+    or s2 < -3 or s2 > 0.1 \
     or lls < 41 or lls > 49 \
     or lts < 2 or lts > 6 \
-    or le < 45  or le > 54 \
+    or le < 45  or le > 53.3 \
     or ti < 0.01 or ti > 0.3\
+    or 1 + (ti * g) ** 2 < 8 \
     or tej < -30 \
     or n < 1 or n > 50\
-    or g < 50 or g > 1000 \
-    or tau < 0.01 or tau > 40:
+    or g < 75 or g > 1000 \
+    or tau < 0.08 or tau > 5:
         return -np.inf
     return lnlike(theta)
 
-tobs_l = np.logspace(log(np.min(xrt_df['t']))-0.08, log(np.max(xrt_df['t']))+0.1, 300)
+tobs_l = np.logspace(log(np.min(xrt_df['t']))-0.08, log(np.max(xrt_df['t']))+0.1, 3000)
 L_pl = np.array([Liso_pl(t, s1_, s2_, lts_, lls_) for t in tobs_l])
 L_flare = np.array([Liso_flare(t, le_, ti_, n_, tej_, tau_, g_) for t in tobs_l])
 L_pl_t90 = np.array([Liso_pl(t, s1_t90, s2_t90, lts_t90, lls_t90) for t in tobs_l])
@@ -223,8 +246,8 @@ plt.scatter(xrt_df['t'], xrt_df['liso'], marker = '.', color='red')
 plt.errorbar(xrt_df['t'], xrt_df['liso'], yerr=xrt_df['lisoe'], fmt='none', color='red', label='XRT')
 #plt.plot(tobs_l, L_pl, color='black', label='PL')
 #plt.plot(tobs_l, L_flare, color='black', label='HLE flare')
-plt.plot(tobs_l, L_pl + L_flare, color='blue', label=f'Total w/o T90 (p = {p:.3g})')
-plt.plot(tobs_l, L_pl_t90 + L_flare_t90, color='green', label=f'Total w/ T90 (p = {p_t90:.3g})')
+plt.plot(tobs_l, L_pl + L_flare, color='blue', label=f'Best-fit')
+plt.plot(tobs_l, L_pl_t90 + L_flare_t90, color='green', label=r'Best-fit with $t_{ej} < T_{90}$')
 plt.xscale('log')
 plt.yscale('log')
 plt.text(np.min(xrt_df['t']), np.min(xrt_df['liso']),
@@ -234,7 +257,8 @@ plt.text(np.min(xrt_df['t']), np.min(xrt_df['liso']),
         + r"$N$ = " + f"{n_:.3g}\n"\
         + r"$\theta_i$ = " + f"{ti_:.3g}\n"\
         + r"$t_{ej}$ = " + f"{tej_:.3g} s\n"\
-        + r"$\tau$ = " + f"{tau_:.3g} s")
+        + r"$\tau$ = " + f"{tau_:.3g} s\n"\
+        + r"$S$ = " + f"{1 + (ti_ * g_)**2:.3g}")
 
 plt.text(12 * np.min(xrt_df['t']), np.min(xrt_df['liso']),
          "w/ T90 constraint:\n"\
@@ -243,19 +267,22 @@ plt.text(12 * np.min(xrt_df['t']), np.min(xrt_df['liso']),
         + r"$N$ = " + f"{n_t90:.3g}\n"\
         + r"$\theta_i$ = " + f"{ti_t90:.3g}\n"\
         + r"$t_{ej}$ = " + f"{tej_t90:.3g} s\n"\
-        + r"$\tau$ = " + f"{tau_t90:.3g} s")
-plt.xlabel('Time after trigger [s]')
-plt.ylabel('XRT luminosity (0.3-30 keV) [erg/s]')
+        + r"$\tau$ = " + f"{tau_t90:.3g} s\n"\
+        + r"$S$ = " + f"{1 + (ti_ * g_)**2:.3g}")
+plt.xlabel('Time after trigger (rest frame) [s]')
+plt.ylabel('XRT Luminosity (rest frame) [erg/s]')
 if t0 != 0:
     plt.axvspan(np.min(tobs_l), t0, color="grey", alpha=0.5)
 if t1 != np.inf:
     plt.axvspan(t1, np.max(tobs_l), color="grey", alpha=0.5)
-plt.legend()
+plt.legend(loc='upper right')
 plt.ylim([0.9 * min(xrt_df['liso']), 2 * max(xrt_df['liso'])])
 if Eiso_p == 0:
-    plt.title(f"GRB{case} (" + r"$T_{90}$" + f" = {t90}" + r"$\pm$" + f"{dt90} s)")
+    plt.title(f"GRB{case} (" + r"$T_{90}$" + f" = {t90_rf:.1f}" + r"$\pm$" + f"{dt90_rf:.1f} s)")
 else:
-    plt.title(f"GRB{case} (" + r"$T_{90}$" + f" = {t90}" + r"$\pm$" + f"{dt90} s, {Eiso_p} erg)")
+    plt.title(f"GRB{case} (" + r"$T_{90}$" + f" = {t90_rf:.1f}" + r"$\pm$" + f"{dt90_rf:.1f} s, {Eiso_p} erg)")
+plt.xlim([30, 1000])
+plt.ylim([3.e46, 3.e48])
 plt.savefig(f"plots/flares/{case}_lc.pdf", bbox_inches="tight")
 
 if not 'mcmc' in argv:

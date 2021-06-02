@@ -36,20 +36,20 @@ int main(int argc, char ** argv){
   double dopp;
 
   /* Distributions */
-  int n_pop = 100000;
+  int n_pop = 20000;
   double n_gw, n_radio, n_r, n_x, n_m;
   double ran;
   //G16
-  //double p1 = 0.53;
-  //double p2 = 3.4;
+  double p1 = 0.53;
+  double p2 = 3.4;
   // WP15
-  double p1 = 1.9;
-  double p2 = 3.;
+  //double p1 = 1.9;
+  //double p2 = 3.;
   double e0_min = 1.0e50;
   double e0_star = 2.0e52;
   double e0_max = 1.0e53;
   //
-  double d_max = 143.0e0;
+  double d_max = 6.e0 * Gpc;//143.0e0 * Mpc;
   double fstar = 1. / (1. + pow(e0_star, p2 - p1) * (1. - p1)
   * (pow(e0_max, 1. - p2) - pow(e0_star, 1. - p2))
   / ((1. - p2) * (pow(e0_star, 1. - p1) - pow(e0_min, 1. - p1))));
@@ -65,7 +65,7 @@ int main(int argc, char ** argv){
   nu_r = 4.56e14;
   nu_x = 2.42e17;
 
-  for (logn =2.; logn < 4.5; logn = logn + 0.25){
+  for (logn = -5.; logn < 4.; logn = logn + 0.25){
     n_gw = 0.0;
     n_radio = 0.0;
     n_r = 0.0;
@@ -75,16 +75,16 @@ int main(int argc, char ** argv){
     for (n_run = 1; n_run < n_pop; n_run++){
       /* Generate random jet parameters */
       n = pow(10.0, logn);
-      tv = acos(rd());
-      d = d_max * pow(rd(), 1. / 3) * Mpc;
+      tv = 0.;
+      d = d_max * pow(rd(), 1. / 3);
 
-      if (1. + 6. * pow(cos(tv), 2) + pow(cos(tv), 4)
-      < 8 * pow(d / Mpc, 2) / pow(d_max, 2)){
-          continue;
-      }
-      else{
+      //if (1. + 6. * pow(cos(tv), 2) + pow(cos(tv), 4)
+      //< 8 * pow(d / d_max, 2)){
+      //    continue;
+      //}
+      //else{
             n_gw = n_gw + 1.;
-      }
+      //}
       ran = rd();
       if (ran < fstar){
          eiso = e0_min
@@ -101,8 +101,8 @@ int main(int argc, char ** argv){
       omega = 2 * PI * (1 - cos(tj));
 
       /* Spatial steps */
-      dr0 = r_dec / 2048;
-      inc_r = pow(2048, 1. / 4096);
+      dr0 = r_dec / 4096;
+      inc_r = pow(4096, 1. / 4096);
 
       /* Initial conditions */
       max_f_nu_obs_radio = 0.0;

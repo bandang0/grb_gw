@@ -1,10 +1,11 @@
-'N''''Plot the histogram of distances.'''
+'''Plot the histogram of distances.'''
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from numpy import log10 as log
 from sys import argv
 from helpers import *
+from scipy.optimize import fsolve
 
 case = argv[1]
 DATA_FILE = f"data/full_ag_{case}.data"
@@ -18,9 +19,6 @@ all_events = pd.read_csv(DATA_FILE, sep=" ",
         names=['ig', 'iv', 'd', 'n', 'e', 'eb',
                'tv', 'pt', 'pf', 'pa', 'pi', 'pc', 'pg', 'pb', 'pd', 'pr', 'pn'])
 
-all_events['yy'] = ee * (all_events['pi'] / all_events['pc']) ** (0.1) / (0.8 * all_events['eb'])
-
-all_events['y'] = 0.5 * (sqrt(4 * all_events['yy']+1)-1)
 
 
 
@@ -29,8 +27,22 @@ gw_vla = all_events.loc[all_events['ig'] * all_events['iv'] == 1]
 vla = all_events.loc[all_events['iv'] == 1]
 gw = all_events.loc[all_events['ig'] == 1]
 
+print(f"Maximum D in GW: {gw['d'].max()}, mean: {gw['d'].mean()}")
+print(f"Mean viewing angle: {gw['tv'].mean() / Deg}")
 print(f"Maximum nu_i: {gw_vla['pi'].max() / GHz} GHz")
-print(f"Average log-Compton: {log(gw_vla['y']).mean()}, 95%: {np.percentile(log(gw_vla['y']), 95)}")
+
+all_events['yy'] = ee * (all_events['pi'] / all_events['pc']) ** (0.1) / (0.8 * all_events['eb'])
+
+all_events['y'] = 0.5 * (sqrt(4 * all_events['yy']+1)-1)
+all_events['yp'] = 0.
+for i in range(len(all_events.y)):
+    first_guess = all_events['y'].iloc[i]
+    x = all_events['yy'].iloc[i]
+    func = lambda z: z * (1 + z)**0.8 - x
+    all_events['yp'].iloc[i] = fsolve(func, first_guess)
+
+print(f"Median log-Compton (basic): {log(gw_vla['y']).median()}, 95%: {np.percentile(log(gw_vla['y']), 95)}")
+print(f"Median log-Compton  (full): {log(gw_vla['yp']).median()}, 95%: {np.percentile(log(gw_vla['yp']), 95)}")
 print(f"Minimum peak index: {gw_vla['pn'].min()}")
 
 print("Peak times (cumulative).")
@@ -271,6 +283,16 @@ plt.title(f"{case}")
 plt.savefig(f"{PLOT_DIR}/dnuidtv.pdf", bbox_inches='tight')
 print("Done.")
 
+print("nu_a vs. density")
+plt.figure()
+plt.hist2d(log(gw_vla['pa'] / GHz), log(gw_vla['n']), bins=100)
+plt.xlabel(r"$\log \nu_a / {\rm GHz}$")
+plt.ylabel(r'$\log n$')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dnuadn.pdf", bbox_inches='tight')
+print("Done.")
+
 print("Viewing angle vs. gamma")
 plt.figure()
 plt.hist2d(gw_vla['tv'] / Deg, gw_vla['pg'], bins=100)
@@ -283,8 +305,9 @@ print("Done.")
 
 print('Compton Y')
 plt.figure()
-plt.hist(log(gw_vla['y']), histtype='step', bins=BINS)
-plt.xlabel("$Y_c$")
+plt.hist(log(gw_vla['y']), histtype='step', bins=BINS, label="basic Y")
+plt.hist(log(gw_vla['yp']), histtype='step', bins=BINS, label="full Y")
+plt.xlabel("$\log Y_c$")
 plt.ylabel('N')
 plt.legend()
 plt.title(f"{case}")
@@ -299,4 +322,14 @@ plt.ylabel(r'$\log T_p$ / day')
 plt.legend()
 plt.title(f"{case}")
 plt.savefig(f"{PLOT_DIR}/dtvdpt.pdf", bbox_inches='tight')
+print("Done.")
+
+print("Y vs. eb")
+plt.figure()
+plt.hist2d(log(gw_vla['yp']), log(gw_vla['eb']), bins=100)
+plt.xlabel(r"$\log Y_c / {\rm GHz}$")
+plt.ylabel(r'$\epsilon_B$')
+plt.legend()
+plt.title(f"{case}")
+plt.savefig(f"{PLOT_DIR}/dydeb.pdf", bbox_inches='tight')
 print("Done.")

@@ -34,7 +34,7 @@ int main(int argc, char ** argv){
   double dopp, pdopp;
 
   /* Distributions */
-  int n_pop = 200000;
+  int n_pop = 1000000;
   double ran;
   //G16
   double p1 = 0.53;
@@ -73,7 +73,7 @@ int main(int argc, char ** argv){
       * pow(1 - ((ran-fstar)/(1-fstar))*(1-pow(e0_max/e0_star, 1-p2)), 1/(1-p2));
     }
     epsilon_b = pow(10., randn(-3, 0.75));
-    n = pow(10., randn(-3, 0.75));
+    n = 1.e-3;
 
     /* Global variables */
     r_dec = pow(3 * eiso
@@ -171,8 +171,7 @@ int main(int argc, char ** argv){
     else {
       ig = 0;
     }
-    fprintf(stdout, "%d %d %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e %d\n",
-        ig, iv, d / Mpc, n, eiso, epsilon_b,
-        tv, pt / day, pf / microJy, pnu_a * pdopp, pnu_i * pdopp, pnu_c * pdopp, pg, pb, pdopp, pr, pn);
+    fprintf(stdout, "%d %d %.12e %.12e %.12e\n",
+        ig, iv, d / Mpc, log10(pf / microJy), log10(pt / day));
   }
 }

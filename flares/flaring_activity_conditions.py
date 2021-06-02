@@ -60,12 +60,12 @@ plateau_ism = lambda x: 6.6e45
 #     plateau_level = 6.6e45
 
 # Flares to plot
-letters = ['A', 'C', 'D', 'E', 'G', 'I', 'J', 'X']
-taus = {'A': 1, 'B': 1, 'C' : 30, 'D': 1., 'E': 4., 'F': 9, 'G': 10, 'H': 4., 'I': 3, 'J': 8, 'K': 5, 'X': 1}
-tejs = {'A': 80, 'B': 50, 'C': 60, 'D': 50, 'E': 50, 'F': 80, 'G': 0, 'H': 80, 'I': 40, 'J': 40, 'K': 20., 'X': 150}
-gammas = {'A': 100, 'B': 50, 'C': 200, 'D': 100, 'E': 100, 'F': 200, 'G': 100, 'H': 100, 'I': 200, 'J': 200, 'K': 100, 'X':200}
-tis =  {'A': .03, 'B': .08, 'C': .03, 'D': .03, 'E': .03, 'F': .03, 'G': .03, 'H': 0.03, 'I': 0.03, 'J': 0.03, 'K': 0.03, 'X': 0.03}
-sizes = {'A': 3, 'B': 6, 'C': 6, 'D': 3, 'E': 3, 'F': 9, 'G': 3, 'H': 3, 'I': 3, 'J': 3, 'K': 3, 'X': 3}
+letters = ['A', 'B', 'C', 'D']
+taus = {'A': 0.5, 'B': 1, 'C' : 1, 'D': 0.5, 'E': 4., 'F': 9, 'G': 10, 'H': 4., 'I': 3, 'J': 8, 'K': 5, 'X': 1}
+tejs = {'A': 80, 'B': 60, 'C': 90, 'D': 50, 'E': 50, 'F': 80, 'G': 0, 'H': 80, 'I': 40, 'J': 40, 'K': 20., 'X': 150}
+gammas = {'A': 100, 'B': 100, 'C': 100, 'D': 100, 'E': 100, 'F': 200, 'G': 100, 'H': 100, 'I': 200, 'J': 200, 'K': 100, 'X':200}
+tis =  {'A': .03, 'B': .03, 'C': .03, 'D': .03, 'E': .03, 'F': .03, 'G': .03, 'H': 0.03, 'I': 0.03, 'J': 0.03, 'K': 0.03, 'X': 0.03}
+sizes = {'A': 15, 'B': 6, 'C': 6, 'D': 3, 'E': 3, 'F': 9, 'G': 3, 'H': 3, 'I': 3, 'J': 3, 'K': 3, 'X': 3}
 
 print("Plotting flares over afterglow")
 tej_los = 30
@@ -79,7 +79,7 @@ te_los = tej_los + re_los / (cLight * beta_los)
 tm_los = te_los - re_los * cos(max(0., - r_los)) / cLight
 tM_los = te_los - re_los * cos(min(Pi, r_los)) / cLight
 print(f"{tm_los}, {tM_los}, {re_los:.2e}")
-tobs_l = np.logspace(0, 6, 1000)
+tobs_l = np.logspace(0, 3, 1000)
 L_los = np.array([simple_hle_patch_band_zero(t, nuobs, chi_los, r_los, te_los, re_los, g_los, Eiso_los, nup, a, b, XRT_0, XRT_1) for t in tobs_l])
 L_wind = np.array([plateau_wind(tobs) for tobs in tobs_l])
 L_ism = np.array([plateau_ism(tobs) for tobs in tobs_l])
@@ -132,8 +132,10 @@ plt.ylabel(f"Luminosity [0.3-30] keV (erg/s)")
 plt.xlabel("Time (s)")
 plt.xscale('log')
 plt.yscale('log')
-plt.ylim([4.e44, 1.e49])
-plt.xlim([50, 7.e3])
+plt.ylim([1.e45, 1.e49])
+plt.xlim([50, 600])
+plt.text(60, 2.e45, 'plateau (Wind)')
+plt.text(60, 7.e45, 'plateau (ISM)')
 plt.legend(loc='upper right')
 plt.savefig(f"{PLOT_DIR}/both_flares.pdf", bbox_inches='tight')
 
@@ -154,18 +156,18 @@ plt.ylim([-tv, tv])
 plt.savefig(f"{PLOT_DIR}/positions.pdf")
 
 print("Plotting activity conditions")
-tej_l = np.linspace(-10, 100, 200)
-tau_l = np.logspace(-3, 2, 200)
+tej_l = np.linspace(0, 100, 200)
+tau_l = np.logspace(log(0.3), log(6), 200)
 
-for case in ['wind', 'ism']:
+for case in ['wind']:
     if case == 'wind':
         afterglow_band = lambda x: (plateau_wind(x) + 1.e47 * (x/100) ** (-3))
     if case == 'ism':
         afterglow_band = lambda x: (plateau_ism(x) + 1.e47 * (x/100) ** (-3))
-    for g in [50, 100, 200]:
+    for g in [100]:
         r = 4 / g
         beta = sqrt(1 - 1 / g ** 2)
-        for ti in [tv - tj, tv - tj / 2]:
+        for ti in [0.03]:
             print(f"{g}, {ti}")
             FILE_NAME = f"activity-{g}-{ti:.2f}"
             chi = ti + r
@@ -175,26 +177,27 @@ for case in ['wind', 'ism']:
 
             # Off axis luminosity
             L = log(np.array([[peak_patch_luminosity_band(nuobs, chi, r, tej + 2 * tau * g ** 2 / beta, 2 * cLight * tau * g ** 2, g, Eiso, nup, a, b, XRT_0, XRT_1)/afterglow_band(tej + 2 * tau * g ** 2 * (1 / beta - ccm)) for tau in tau_l] for tej in tej_l]))
-            CS = ax.contour(tau_l, tej_l, L, 25, colors="red")
+            CS = ax.contour(tau_l, tej_l, L, levels=[-1., -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2], colors="green", label=r"$\log L_{\rm flare} / L_{\rm ESD}$")
             ax.clabel(CS, inline=1, inline_spacing=0, fmt='%1.1f', rightside_up=0, fontsize="smaller", use_clabeltext=1)
             #plt.pcolor(tau_l, tej_l, L, cmap="Greys", norm=Normalize(-3, 3))
             #plt.colorbar(label="$\log L_{off}$ / AG")
 
             # Arrival time off
             Y1 = [30 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l]
-            Y2 = [1000 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l]
+            Y2 = [300 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l]
             plt.plot(tau_l, Y1,
                      color = "blue", linestyle=":")
-            plt.plot(tau_l, [100 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l],
-                     color = "blue", linestyle="--")
-            plt.plot(tau_l, [300 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l],
-                     label=r"$t_{\rm flare}$ = 30, 100, 300, 500, 1000 [s]", color = "blue")
-            plt.plot(tau_l, [500 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l],
-                     color = "blue", linestyle="--")
+            plt.plot(tau_l, [50 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l], color = "blue", linestyle="--")
+            plt.plot(tau_l, [75 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l], color = "blue", linestyle="-")
+            plt.plot(tau_l, [100 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l], label=r"$t_{\rm flare}$ = 30, 100, 300, 500, 1000 [s]", color = "blue", linestyle='--')
+            #plt.plot(tau_l, [300 - 2 * tau * g**2 * (1 - beta * ccm) / beta for tau in tau_l], color = "blue", linestyle="--")
             plt.plot(tau_l, Y2,
                       color = "blue", linestyle=":")
             plt.fill_between(tau_l, Y1, Y2, color="blue", alpha=0.2)
-
+            plt.text(2, 3 , r"$t_{\rm flare}$ = 30 s", rotation = -30, color="blue")
+            plt.text(2, 23 , r"$t_{\rm flare}$ = 50 s", rotation = -30, color="blue")
+            plt.text(2, 48 , r"$t_{\rm flare}$ = 75 s", rotation = -30, color="blue")
+            plt.text(2, 72 , r"$t_{\rm flare}$ = 100 s", rotation = -30, color="blue")
             # Aspect ratio
             # Y1 = [(1/0.1) * 2 * tau * g **2 * dcos - 2 * tau * g ** 2  * (1 - beta * ccm) / beta for tau in tau_l]
             # Y2 = [(1/2) * 2 * tau * g **2 * dcos - 2 * tau * g ** 2  * (1 - beta * ccm) / beta for tau in tau_l]
@@ -211,12 +214,12 @@ for case in ['wind', 'ism']:
             # plt.fill_between(tau_l, Y1, Y2, color="red", alpha=0.2)
 
             # On axis luminosity
-            plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e50), ymin = -10, ymax = 100, color="green", linestyle=":")
-            plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e51), ymin = -10, ymax = 100, color="green", linestyle="--")
-            plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e52), ymin = -10, ymax = 100, color="green", label=r"$L_{\rm on, BAT} = 10^{50}, 10^{51}, 10^{52}, 10^{53}, 10^{54}$ [erg/s]")
-            plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e53), ymin = -10, ymax = 100, color="green", linestyle="--")
-            plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e54), ymin = -10, ymax = 100, color="green", linestyle=":")
-            plt.axvspan(BAT_c * Eiso / (2 * g * nup * 1.e50), BAT_c * Eiso / (2 * g * nup * 1.e54), color="green", alpha=0.2)
+            # plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e51), ymin = -10, ymax = 100, color="green", linestyle=":")
+            # plt.vlines(BAT_c * Eiso / (2 * g * nup * 5.e51), ymin = -10, ymax = 100, color="green", linestyle="--")
+            # plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e52), ymin = -10, ymax = 100, color="green", label=r"$L_{\rm on, BAT} = 10^{50}, 10^{51}, 10^{52}, 10^{53}, 10^{54}$ [erg/s]")
+            # plt.vlines(BAT_c * Eiso / (2 * g * nup * 5.e52), ymin = -10, ymax = 100, color="green", linestyle="--")
+            # plt.vlines(BAT_c * Eiso / (2 * g * nup * 1.e53), ymin = -10, ymax = 100, color="green", linestyle=":")
+            # plt.axvspan(BAT_c * Eiso / (2 * g * nup * 1.e50), BAT_c * Eiso / (2 * g * nup * 1.e54), color="green", alpha=0.2)
 
             # Flare points
             for letter in letters:
@@ -224,14 +227,10 @@ for case in ['wind', 'ism']:
                     plt.plot([taus[letter]], [tejs[letter]], marker='o', color="black")
                     plt.text(taus[letter], tejs[letter] + 5, letter)
             plt.xscale("log")
-            plt.ylim(-10, 100)
-            plt.xlim(1.e-3, 100)
-            if g == 100:
+            plt.ylim(0, 100)
+            plt.xlim(0.3, 6)
+            if case == 'wind':
                 plt.ylabel(r"$t_{ej}$ [s]")
-            if case == 'ism':
+            if case:
                 plt.xlabel(r"$\tau~(= \Delta t_{on})$ [s]")
-            if case == "wind":
-                plt.title(r"$\Gamma$ = " + f"{g}, "+ r"$\theta_i$ = " + f"{ti:.2f}" + " rad")
-            if g == 50 and ti == 0.03:
-                plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
             plt.savefig(f"{PLOT_DIR}/{case}_{FILE_NAME}.pdf", bbox_inches='tight')

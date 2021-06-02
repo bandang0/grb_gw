@@ -72,8 +72,18 @@ g16 = pd.read_csv("data/g16_frac_n.data", sep=" ",
         names=['logn0', 'a', 'b', 'c', 'd', 'e', 'radio', 'r', 'x', 'm'])
 wp15 = pd.read_csv("data/wp15_frac_n.data", sep=" ",
         names=['logn0', 'a', 'b', 'c', 'd', 'e', 'radio', 'r', 'x', 'm'])
-frac = interp1d(g16['logn0'], g16['m'], kind='cubic')
+fracg16 = interp1d(g16['logn0'], g16['m'], kind='cubic')
 fracwp = interp1d(wp15['logn0'], wp15['m'], kind='cubic')
+
+print(f"Collecting data (aligned)")
+g16_aligned = pd.read_csv("data/g16_frac_n_aligned.data", sep=" ",
+        names=['logn0', 'a', 'b', 'c', 'd', 'e', 'radio', 'r', 'x', 'm'])
+fracg16_aligned = interp1d(g16_aligned['logn0'], g16_aligned['m'], kind='cubic')
+
+print(f"Collecting data (aligned far)")
+g16_far = pd.read_csv("data/g16_frac_n_aligned_far.data", sep=" ",
+        names=['logn0', 'a', 'b', 'c', 'd', 'e', 'radio', 'r', 'x', 'm'])
+fracg16_far = interp1d(g16_far['logn0'], g16_far['m'], kind='cubic')
 
 
 print("fig4a")
@@ -89,11 +99,48 @@ plt.plot(g16['logn0'], 100 * g16['x'], color="orange",
 plt.plot(g16['logn0'], 100 * g16['m'],color="black",
             label=r"Multi-$\lambda$")
 plt.legend()
+plt.title("Recovery of GW+AG (G16)")
 plt.xlim([-5, 3.5])
 plt.ylim([0, 100])
-#plt.grid(True)
+
 plt.savefig(f"{PLOT_DIR}/fig4a.pdf", bbox_inches = 'tight')
 
+print("fig4a_aligned")
+plt.figure()
+plt.xlabel(r"$\log n~[{\rm cm}^{-3}]$")
+plt.ylabel(r"$r(n)$ [\%]")
+plt.plot(g16_aligned['logn0'], 100 * g16_aligned['radio'],color="blue",
+            label=r"Radio")
+plt.plot(g16_aligned['logn0'], 100 * g16_aligned['r'], color="green",
+            label=r"$r$")
+plt.plot(g16_aligned['logn0'], 100 * g16_aligned['x'], color="orange",
+            label=r"X")
+plt.plot(g16_aligned['logn0'], 100 * g16_aligned['m'],color="black",
+            label=r"Multi-$\lambda$")
+plt.legend()
+plt.title(r"Recovery of GW+AG, with $\theta_v = 0$ (G16)")
+plt.xlim([-5, 3.5])
+plt.ylim([0, 100])
+plt.savefig(f"{PLOT_DIR}/fig4a_aligned.pdf", bbox_inches = 'tight')
+
+print("fig4a_far")
+plt.figure()
+plt.xlabel(r"$\log n~[{\rm cm}^{-3}]$")
+plt.ylabel(r"$r(n)$ [\%]")
+plt.plot(g16_far['logn0'], 100 * g16_far['radio'],color="blue",
+            label=r"Radio")
+plt.plot(g16_far['logn0'], 100 * g16_far['r'], color="green",
+            label=r"$r$")
+plt.plot(g16_far['logn0'], 100 * g16_far['x'], color="orange",
+            label=r"X")
+plt.plot(g16_far['logn0'], 100 * g16_far['m'],color="black",
+            label=r"Multi-$\lambda$")
+plt.legend()
+plt.title(r"Recovery of AG only, with $\theta_v = 0$" + "\n" + r"and $D_L <$ 6 Gpc (G16)")
+plt.xlim([-5, 3.5])
+plt.ylim([0, 100])
+
+plt.savefig(f"{PLOT_DIR}/fig4a_far.pdf", bbox_inches = 'tight')
 print("fig4b")
 plt.figure()
 plt.xlabel(r"$\log n~[{\rm cm}^{-3}]$")
@@ -109,78 +156,21 @@ plt.plot(wp15['logn0'], 100 * wp15['m'], color="black",
 plt.xlim([-5, 3.5])
 plt.ylim([0, 100])
 plt.legend()
-#plt.grid(True)
+plt.title("Recovery of GW+AG (WP15)")
 plt.savefig(f"{PLOT_DIR}/fig4b.pdf", bbox_inches = 'tight')
-
-n1 = -3.
-n2 = 0.
-f1 = frac(n1)
-f2 = frac(n2)
-f1wp = fracwp(n1)
-f2wp = fracwp(n2)
-
-print("fig5a")
-plt.figure()
-plt.xlabel(r"$f_{\rm HD}$")
-plt.ylabel(r"$p(f_{\rm HD} | f_{\rm HD}^{\rm obs})$")
-#plt.xscale('log')
-plt.plot(p2_l, posterior(0.5, 0.5, n1, n2, 10, 5, p2_l), ":",
-color = "blue", linewidth=1.2)
-plt.plot(p2_l, posterior(f1, f2, n1, n2, 10, 1, p2_l), "-",
-color="green", linewidth=1.2, label=r"$f_{\rm HD}^{\rm obs}$ = 1/10")
-plt.plot(p2_l, posterior(f1, f2, n1, n2, 10, 3, p2_l), "-",
-color="red", linewidth=1.2, label="3/10")
-plt.plot(p2_l, posterior(f1, f2, n1, n2, 10, 5, p2_l), "-",
-color= "blue", linewidth=1.2, label="5/10")
-plt.plot(p2_l, posterior(f1, f2, n1, n2, 1, 0, p2_l), "--",
-color="grey", label="0/1", linewidth=1.2)
-plt.xlim([0., .5])
-plt.ylim([0., 12])
-plt.legend(loc="upper left")
-#plt.grid(True)
-plt.savefig(f"{PLOT_DIR}/fig5a.pdf", bbox_inches = 'tight')
-
-print("fig5b")
-plt.figure()
-plt.xlabel(r"$f_{\rm HD}$")
-plt.ylabel(r"$p(f_{\rm HD} | f_{\rm HD}^{\rm obs})$")
-#plt.xscale('log')
-plt.plot(p2_l, posterior(0.5, 0.5, n1, n2, 10, 5, p2_l), ":",
-color = "blue", linewidth=1.2)
-plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 10, 1, p2_l), "-",
-color="green", label=r"$f_{HD}^{\rm obs} = 1/10$", linewidth=1.2)
-plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 10, 3, p2_l), "-",
-color="red", label="3/10", linewidth=1.2)
-plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 10, 5, p2_l), "-",
-color= "blue", label="5/10", linewidth=1.2)
-plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 1, 0, p2_l), "--",
-color="grey", label="0/1", linewidth=1.2)
-plt.xlim([0., .5])
-plt.ylim([0., 12])
-#plt.grid(True)
-plt.savefig(f"{PLOT_DIR}/fig5b.pdf", bbox_inches = 'tight')
-
 
 AH_O3 = 143.
 vlas = 15.
-df3 = pd.read_csv("data/g16_3.data", sep=" ",
-        names=['d', 'n', 'e0', 'eb',
-        'tv', 'tj', 'pt', 'pf'])
-df3['lpf'] = log(df3['pf'])
-df3['lpt'] = log(df3['pt'])
-print(df3['d'].max())
-gw3_O3 = df3.loc[1. + 6. * cos(df3['tv']) ** 2 + cos(df3['tv']) ** 4\
-            > 8 * df3['d'] ** 2 / AH_O3 ** 2]
-gw3_vla_O3 = gw3_O3.loc[gw3_O3['pf'] > vlas]
 
+print("df0")
 df0 = pd.read_csv("data/g16_0.data", sep=" ",
-        names=['d', 'n', 'e0', 'eb',
-        'tv', 'tj', 'pt', 'pf'])
-df0['lpf'] = log(df0['pf'])
-df0['lpt'] = log(df0['pt'])
-gw0_O3 = df0.loc[1. + 6. * cos(df0['tv']) ** 2 + cos(df0['tv']) ** 4\
-            > 8 * df0['d'] ** 2 / AH_O3 ** 2]
-gw0_vla_O3 = gw0_O3.loc[gw0_O3['pf'] > vlas]
+        names=['ig', 'iv', 'd', 'lpf', 'lpt'])
+gw0_vla_O3 = df0.loc[df0['ig'] * df0['iv'] == 1]
+
+print("df3")
+df3 = pd.read_csv("data/g16_3.data", sep=" ",
+        names=['ig', 'iv', 'd', 'lpf', 'lpt'])
+gw3_vla_O3 = df3.loc[df3['ig'] * df3['iv'] == 1]
 
 print("fig2")
 col_to_plot = ['d','lpf', 'lpt']
@@ -189,7 +179,7 @@ fig = corner.corner(gw0_vla_O3[col_to_plot],
                             r'$\log T_{\rm p}$ [d]'],
                     label_kwargs={'fontsize':'large'},
                     contour_kwargs={'linewidths':0.9,'levels':6},
-                    range=[(0, 143), (log(15.), 5), (-0.5, 4)],
+                    range=[(0, 143), (1, 5), (-0.5, 4)],
                     bins=BINS,
                     color="blue",
                     plot_density=False,
@@ -212,9 +202,60 @@ corner.corner(gw3_vla_O3[col_to_plot],
 
 plt.savefig(f"{PLOT_DIR}/fig2.pdf", bbox_inches = 'tight')
 
+exit(0)
+n1 = -3.
+n2 = 0.
+f1g16 = fracg16(n1)
+f2g16 = fracg16(n2)
+f1wp = fracwp(n1)
+f2wp = fracwp(n2)
+
+print("fig5a")
+plt.figure()
+plt.xlabel(r"$f_{\rm HD}$")
+plt.ylabel(r"$p(f_{\rm HD} | f_{\rm HD}^{\rm obs})$")
+#plt.xscale('log')
+plt.plot(p2_l, posterior(0.5, 0.5, n1, n2, 10, 5, p2_l), ":",
+color = "blue", linewidth=1.2)
+plt.plot(p2_l, posterior(f1g16, f2g16, n1, n2, 10, 1, p2_l), "-",
+color="green", linewidth=1.2, label=r"$f_{\rm HD}^{\rm obs}$ = 1/10")
+plt.plot(p2_l, posterior(f1g16, f2g16, n1, n2, 10, 3, p2_l), "-",
+color="red", linewidth=1.2, label="3/10")
+plt.plot(p2_l, posterior(f1g16, f2g16, n1, n2, 10, 5, p2_l), "-",
+color= "blue", linewidth=1.2, label="5/10")
+plt.plot(p2_l, posterior(f1g16, f2g16, n1, n2, 1, 0, p2_l), "--",
+color="grey", label="0/1", linewidth=1.2)
+plt.xlim([0., .5])
+plt.ylim([0., 12])
+plt.legend(loc="upper left")
+
+plt.savefig(f"{PLOT_DIR}/fig5a.pdf", bbox_inches = 'tight')
+
+print("fig5b")
+plt.figure()
+plt.xlabel(r"$f_{\rm HD}$")
+plt.ylabel(r"$p(f_{\rm HD} | f_{\rm HD}^{\rm obs})$")
+#plt.xscale('log')
+plt.plot(p2_l, posterior(0.5, 0.5, n1, n2, 10, 5, p2_l), ":",
+color = "blue", linewidth=1.2)
+plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 10, 1, p2_l), "-",
+color="green", label=r"$f_{HD}^{\rm obs} = 1/10$", linewidth=1.2)
+plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 10, 3, p2_l), "-",
+color="red", label="3/10", linewidth=1.2)
+plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 10, 5, p2_l), "-",
+color= "blue", label="5/10", linewidth=1.2)
+plt.plot(p2_l, posterior(f1wp, f2wp, n1, n2, 1, 0, p2_l), "--",
+color="grey", label="0/1", linewidth=1.2)
+plt.xlim([0., .5])
+plt.ylim([0., 12])
+
+plt.savefig(f"{PLOT_DIR}/fig5b.pdf", bbox_inches = 'tight')
+
+
+
 print("fig3a")
-pp1 = 1 - ptilde(0.1, f1, f2)
-pp3 = 1 - ptilde(0.3, f1, f2)
+pp1 = 1 - ptilde(0.1, f1g16, f2g16)
+pp3 = 1 - ptilde(0.3, f1g16, f2g16)
 print(pp1, pp3)
 plt.figure()
 xbins=np.linspace(0,143, BINS)
@@ -227,7 +268,7 @@ color="red", linestyle="-")
 plt.xlabel(r"$D$/Mpc")
 plt.ylabel(r"$dN/dD$")
 plt.legend(loc="upper left")
-#plt.grid(True)
+
 plt.savefig(f"{PLOT_DIR}/fig3a.pdf", bbox_inches = 'tight')
 
 print("fig3b")
@@ -242,7 +283,7 @@ color="red", linestyle="-")
 plt.xlabel(r"$\log F_p$/${\rm \mu Jy}$")
 plt.ylabel(r"$dN/d\log F_p$")
 #plt.legend(loc="upper left")
-#plt.grid(True)
+
 plt.savefig(f"{PLOT_DIR}/fig3b.pdf", bbox_inches = 'tight')
 
 print("fig3c")
@@ -257,5 +298,5 @@ color="red", linestyle="-")
 plt.xlabel(r"$\log T_p$/${\rm d}$")
 plt.ylabel(r"$dN/d\log T_p$")
 #plt.legend(loc="upper left")
-#plt.grid(True)
+
 plt.savefig(f"{PLOT_DIR}/fig3c.pdf", bbox_inches = 'tight')
